@@ -23,8 +23,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type CookieItem = {
   id: number;
   name: string;
@@ -35,8 +33,6 @@ type CookieItem = {
 };
 
 type CartEntry = CookieItem & { quantity: number };
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const COOKIES: CookieItem[] = [
   {
@@ -113,20 +109,10 @@ const COOKIES: CookieItem[] = [
   },
 ];
 
-const CATEGORIES = [
-  "todos",
-  "clássicos",
-  "chocolate",
-  "especiais",
-  "sem glúten",
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const CATEGORIES = ["todos", "clássicos", "chocolate", "especiais", "sem glúten"];
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-// ─── Cookie Card ──────────────────────────────────────────────────────────────
 
 function CookieCard({
   cookie,
@@ -148,21 +134,16 @@ function CookieCard({
         animation: `card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.07}s both`,
       }}
     >
-      {/* Visual placeholder */}
       <div
         className="relative aspect-square flex items-center justify-center overflow-hidden"
         style={{ backgroundColor: cookie.visual.bg }}
       >
-        <span
-          className="text-7xl select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[-8deg] drop-shadow-md"
-        >
+        <span className="text-7xl select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[-8deg] drop-shadow-md">
           {cookie.visual.emoji}
         </span>
 
-        {/* Shine overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Price badge on corner */}
         {quantity > 0 && (
           <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-xs font-heading font-bold px-2.5 py-1 rounded-full shadow-md">
             {quantity}× no carrinho
@@ -170,7 +151,6 @@ function CookieCard({
         )}
       </div>
 
-      {/* Info */}
       <div className="flex flex-col flex-1 p-5 gap-3">
         <div className="flex-1">
           <h3 className="font-heading text-xl font-bold leading-tight tracking-tight text-foreground">
@@ -221,8 +201,6 @@ function CookieCard({
     </article>
   );
 }
-
-// ─── Cart Item Row ─────────────────────────────────────────────────────────────
 
 function CartItemRow({
   entry,
@@ -279,8 +257,6 @@ function CartItemRow({
   );
 }
 
-// ─── Main Catalog ─────────────────────────────────────────────────────────────
-
 export function Catalog() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
@@ -289,19 +265,19 @@ export function Catalog() {
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  const delivery = cartTotal >= 50 ? 0 : 8.9;
+  const orderTotal = cartTotal + delivery;
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return COOKIES.filter(
       (c) =>
         (category === "todos" || c.category === category) &&
-        (c.name.toLowerCase().includes(q) ||
-          c.description.toLowerCase().includes(q))
+        (c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q))
     );
   }, [search, category]);
 
-  const getQty = (id: number) =>
-    cart.find((i) => i.id === id)?.quantity ?? 0;
+  const getQty = (id: number) => cart.find((i) => i.id === id)?.quantity ?? 0;
 
   const addToCart = (cookie: CookieItem) => {
     setCart((prev) => {
@@ -316,12 +292,10 @@ export function Catalog() {
 
   const removeFromCart = (id: number) => {
     setCart((prev) => {
-      const existing = prev.find((i) => i.id === id);
-      if (!existing) return prev;
-      if (existing.quantity === 1) return prev.filter((i) => i.id !== id);
-      return prev.map((i) =>
-        i.id === id ? { ...i, quantity: i.quantity - 1 } : i
-      );
+      const item = prev.find((i) => i.id === id);
+      if (!item) return prev;
+      if (item.quantity === 1) return prev.filter((i) => i.id !== id);
+      return prev.map((i) => (i.id === id ? { ...i, quantity: i.quantity - 1 } : i));
     });
   };
 
@@ -330,15 +304,9 @@ export function Catalog() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-          {/* Brand */}
-          <a
-            href="/"
-            className="flex items-center gap-2 shrink-0"
-            aria-label="SweetOrder"
-          >
+          <a href="/" className="flex items-center gap-2 shrink-0" aria-label="SweetOrder">
             <Cookie
               className="w-5 h-5 transition-transform duration-500 hover:rotate-12"
               style={{ color: "var(--brand-sage)" }}
@@ -351,7 +319,6 @@ export function Catalog() {
             </span>
           </a>
 
-          {/* Search */}
           <div className="flex-1 max-w-lg mx-auto relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -362,7 +329,6 @@ export function Catalog() {
             />
           </div>
 
-          {/* Cart button */}
           <button
             onClick={() => setCartOpen(true)}
             className="relative flex items-center gap-2 rounded-full border border-border px-4 h-10 hover:bg-secondary hover:border-primary/30 transition-all"
@@ -373,10 +339,7 @@ export function Catalog() {
               Carrinho
             </span>
             {cartCount > 0 && (
-              <Badge
-                key={`badge-${cartCount}`}
-                className="h-5 min-w-5 px-1.5 text-xs font-bold rounded-full absolute -top-1.5 -right-1.5 animate-badge-pop"
-              >
+              <Badge className="h-5 min-w-5 px-1.5 text-xs font-bold rounded-full absolute -top-1.5 -right-1.5 animate-badge-pop">
                 {cartCount}
               </Badge>
             )}
@@ -384,9 +347,7 @@ export function Catalog() {
         </div>
       </header>
 
-      {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 pt-14 pb-10 overflow-hidden">
-        {/* Floating cookie decorations */}
         <span
           aria-hidden
           className="pointer-events-none absolute right-[15%] top-4 text-5xl opacity-100 animate-float-cookie select-none"
@@ -401,6 +362,7 @@ export function Catalog() {
         >
           🍫
         </span>
+
         <h1
           className="font-heading text-5xl sm:text-6xl lg:text-7xl font-black leading-none tracking-tight text-foreground animate-slide-up"
           style={{ animationDelay: "0s" }}
@@ -417,16 +379,12 @@ export function Catalog() {
           Feitos à mão, assados na hora e entregues direto pra você.
         </p>
 
-        {/* Stats strip */}
         <div
           className="mt-8 flex items-center gap-6 text-sm text-muted-foreground animate-slide-up"
           style={{ animationDelay: "0.22s" }}
         >
           <span className="flex items-center gap-1.5">
-            <Sparkles
-              className="w-3.5 h-3.5"
-              style={{ color: "var(--brand-amber)" }}
-            />
+            <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--brand-amber)" }} />
             <span className="font-heading font-semibold text-foreground">
               {COOKIES.length}
             </span>{" "}
@@ -434,10 +392,7 @@ export function Catalog() {
           </span>
           <span className="w-px h-4 bg-border" />
           <span className="flex items-center gap-1.5">
-            <Cookie
-              className="w-3.5 h-3.5"
-              style={{ color: "var(--brand-sage)" }}
-            />
+            <Cookie className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
             Feito artesanal
           </span>
           <span className="w-px h-4 bg-border hidden sm:block" />
@@ -445,7 +400,6 @@ export function Catalog() {
         </div>
       </section>
 
-      {/* ── Category filters ─────────────────────────────────────────────────── */}
       <section
         className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-8 animate-slide-up"
         style={{ animationDelay: "0.3s" }}
@@ -463,11 +417,7 @@ export function Catalog() {
                     : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-border"
                 }
               `}
-              style={
-                category === cat
-                  ? { backgroundColor: "var(--brand-sage)" }
-                  : {}
-              }
+              style={category === cat ? { backgroundColor: "var(--brand-sage)" } : {}}
             >
               {cat}
             </button>
@@ -475,7 +425,6 @@ export function Catalog() {
         </div>
       </section>
 
-      {/* ── Cookie grid ─────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
@@ -483,9 +432,7 @@ export function Catalog() {
             <h2 className="font-heading text-2xl font-bold text-foreground">
               Nenhum cookie encontrado
             </h2>
-            <p className="text-muted-foreground">
-              Tente outro termo ou categoria.
-            </p>
+            <p className="text-muted-foreground">Tente outro termo ou categoria.</p>
             <Button
               variant="outline"
               onClick={() => {
@@ -513,18 +460,11 @@ export function Catalog() {
         )}
       </main>
 
-      {/* ── Cart Sheet ──────────────────────────────────────────────────────── */}
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-[420px] flex flex-col p-0 gap-0"
-        >
+        <SheetContent side="right" className="w-full sm:max-w-[420px] flex flex-col p-0 gap-0">
           <SheetHeader className="px-6 pt-6 pb-4">
             <SheetTitle className="font-heading text-2xl font-extrabold tracking-tight flex items-center gap-2">
-              <ShoppingCart
-                className="w-5 h-5"
-                style={{ color: "var(--brand-amber)" }}
-              />
+              <ShoppingCart className="w-5 h-5" style={{ color: "var(--brand-amber)" }} />
               Carrinho
               {cartCount > 0 && (
                 <span className="font-sans text-sm font-normal text-muted-foreground ml-1">
@@ -579,11 +519,8 @@ export function Catalog() {
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>Entrega</span>
-                    <span
-                      className="font-semibold"
-                      style={{ color: "var(--brand-sage)" }}
-                    >
-                      {cartTotal >= 50 ? "Grátis" : fmt(8.9)}
+                    <span className="font-semibold" style={{ color: "var(--brand-sage)" }}>
+                      {delivery === 0 ? "Grátis" : fmt(delivery)}
                     </span>
                   </div>
                   <Separator />
@@ -595,10 +532,10 @@ export function Catalog() {
                       className="font-heading text-2xl font-black tracking-tight"
                       style={{ color: "var(--brand-amber)" }}
                     >
-                      {fmt(cartTotal >= 50 ? cartTotal : cartTotal + 8.9)}
+                      {fmt(orderTotal)}
                     </span>
                   </div>
-                  {cartTotal < 50 && (
+                  {delivery > 0 && (
                     <p className="text-xs text-muted-foreground text-center pt-1">
                       Faltam{" "}
                       <span className="font-semibold text-foreground">

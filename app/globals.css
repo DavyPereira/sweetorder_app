@@ -46,11 +46,9 @@
 }
 
 :root {
-  /* Brand identity colors (from logo) */
-  --brand-sage: oklch(0.52 0.07 138);    /* "Lolo" green */
-  --brand-amber: oklch(0.63 0.14 62);    /* "cookies" golden */
+  --brand-sage: oklch(0.52 0.07 138);
+  --brand-amber: oklch(0.63 0.14 62);
 
-  /* System tokens */
   --background: oklch(0.985 0.008 85);
   --foreground: oklch(0.18 0.020 55);
   --card: oklch(1 0 0);
@@ -109,28 +107,14 @@
   --sidebar-ring: oklch(0.72 0.14 62);
 }
 
-/* ─── Keyframes ────────────────────────────────────────────────────────────── */
-
 @keyframes slide-up-fade {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes card-in {
-  from {
-    opacity: 0;
-    transform: translateY(24px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes badge-pop {
@@ -151,33 +135,15 @@
   50%       { opacity: 0.8; transform: scale(1.06); }
 }
 
-/* ─── Animation utilities ──────────────────────────────────────────────────── */
-
 @layer utilities {
-  .animate-slide-up {
-    animation: slide-up-fade 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-  .animate-badge-pop {
-    animation: badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .animate-float-cookie {
-    animation: float-cookie 4s ease-in-out infinite;
-  }
-  .animate-pulse-soft {
-    animation: pulse-soft 3s ease-in-out infinite;
-  }
+  .animate-slide-up   { animation: slide-up-fade 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-badge-pop  { animation: badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .animate-float-cookie { animation: float-cookie 4s ease-in-out infinite; }
+  .animate-pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
 }
 
-/* ─── Base ─────────────────────────────────────────────────────────────────── */
-
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground; }
+  html { @apply font-sans; }
 }
