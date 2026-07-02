@@ -2,6 +2,9 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/lib/cart-context";
+import { cn } from "@/lib/utils";
 
 const SELLER_WHATSAPP = "5585992737489";
 const FREE_DELIVERY_THRESHOLD = 50;
@@ -31,15 +35,27 @@ const fmt = (v: number) =>
 type PaymentMethod = "pix" | "credit" | "cash";
 type Direction = "forward" | "back";
 
-type AddressForm = {
-  cep: string;
-  street: string;
-  number: string;
-  complement: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-};
+const addressSchema = z.object({
+  cep: z
+    .string()
+    .min(1, "CEP é obrigatório para prosseguir")
+    .regex(/^\d{5}-\d{3}$/, "CEP deve ter 8 dígitos"),
+  street: z.string().trim().min(1, "Rua é obrigatória para prosseguir"),
+  number: z
+    .string()
+    .min(1, "Número é obrigatório para prosseguir")
+    .regex(/^\d+$/, "Número deve conter apenas dígitos"),
+  complement: z.string(),
+  neighborhood: z.string().trim().min(1, "Bairro é obrigatório para prosseguir"),
+  city: z.string().trim().min(1, "Cidade é obrigatória para prosseguir"),
+  state: z
+    .string()
+    .trim()
+    .length(2, "UF é obrigatória para prosseguir")
+    .regex(/^[A-Z]{2}$/, "UF inválida"),
+});
+
+type AddressForm = z.infer<typeof addressSchema>;
 
 type ViaCepResponse = {
   logradouro: string;
@@ -94,6 +110,15 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function FieldError({ children }: { children?: string }) {
+  if (!children) return null;
+  return <p className="mt-1.5 text-xs font-medium text-destructive">{children}</p>;
+}
+
+function inputClass(hasError: boolean, base = "rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors") {
+  return cn(base, hasError && "border-destructive focus-visible:border-destructive");
+}
+
 export function Checkout() {
   const router = useRouter();
   const { cart, cartCount, cartTotal, delivery, orderTotal } = useCart();
@@ -101,15 +126,26 @@ export function Checkout() {
   const [step, setStep] = useState(1);
   const directionRef = useRef<Direction>("forward");
 
-  const [address, setAddress] = useState<AddressForm>({
-    cep: "",
-    street: "",
-    number: "",
-    complement: "",
-    neighborhood: "",
-    city: "",
-    state: "",
+  const {
+    control: addressControl,
+    handleSubmit: handleAddressSubmit,
+    setValue: setAddressValue,
+    formState: { errors: addressErrors },
+  } = useForm<AddressForm>({
+    resolver: zodResolver(addressSchema),
+    defaultValues: {
+      cep: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
+    },
   });
+  const address = useWatch({ control: addressControl }) as AddressForm;
+  const [addressAttempted, setAddressAttempted] = useState(false);
+
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("pix");
@@ -119,20 +155,19 @@ export function Checkout() {
   const pixDiscount = payment === "pix" ? cartTotal * 0.05 : 0;
   const finalTotal = orderTotal - pixDiscount;
 
-  const isAddressValid =
-    address.cep.replace(/\D/g, "").length === 8 &&
-    address.street.trim() !== "" &&
-    address.number.trim() !== "" &&
-    address.neighborhood.trim() !== "" &&
-    address.city.trim() !== "";
-
   const goTo = (target: number) => {
     directionRef.current = target > step ? "forward" : "back";
     setStep(target);
   };
 
   const setField = (field: keyof AddressForm, value: string) =>
-    setAddress((prev) => ({ ...prev, [field]: value }));
+    setAddressValue(field, value, { shouldValidate: addressAttempted });
+
+  const onAddressContinue = () =>
+    handleAddressSubmit(
+      () => goTo(2),
+      () => setAddressAttempted(true)
+    )();
 
   const lookupCep = async () => {
     const clean = address.cep.replace(/\D/g, "");
@@ -143,13 +178,10 @@ export function Checkout() {
       const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
       const data: ViaCepResponse = await res.json();
       if (data.erro) { setCepError("CEP não encontrado"); return; }
-      setAddress((prev) => ({
-        ...prev,
-        street: data.logradouro,
-        neighborhood: data.bairro,
-        city: data.localidade,
-        state: data.uf,
-      }));
+      setField("street", data.logradouro);
+      setField("neighborhood", data.bairro);
+      setField("city", data.localidade);
+      setField("state", data.uf);
     } catch {
       setCepError("Erro ao buscar CEP. Tente novamente.");
     } finally {
@@ -162,6 +194,18 @@ export function Checkout() {
     const formatted = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
     setField("cep", formatted);
     setCepError("");
+  };
+
+  const handleNumberChange = (value: string) => {
+    setField("number", value.replace(/\D/g, "").slice(0, 6));
+  };
+
+  const handleCityChange = (value: string) => {
+    setField("city", value.replace(/[0-9]/g, ""));
+  };
+
+  const handleStateChange = (value: string) => {
+    setField("state", value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2));
   };
 
   const buildMessage = () => {
@@ -288,7 +332,10 @@ export function Checkout() {
                   value={address.cep}
                   onChange={(e) => handleCepChange(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && lookupCep()}
-                  className="rounded-xl h-14 text-lg font-heading font-semibold flex-1 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                  className={inputClass(
+                    !!cepError || !!addressErrors.cep,
+                    "rounded-xl h-14 text-lg font-heading font-semibold flex-1 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                  )}
                   maxLength={9}
                 />
                 <button
@@ -299,7 +346,7 @@ export function Checkout() {
                   {cepLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Buscar <ChevronRight className="w-4 h-4" /></>}
                 </button>
               </div>
-              {cepError && <p className="mt-2 text-sm font-medium text-destructive">{cepError}</p>}
+              <FieldError>{cepError || addressErrors.cep?.message}</FieldError>
             </div>
 
             {/* Address fields */}
@@ -311,17 +358,21 @@ export function Checkout() {
                     placeholder="Nome da rua"
                     value={address.street}
                     onChange={(e) => setField("street", e.target.value)}
-                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                    className={inputClass(!!addressErrors.street)}
                   />
+                  <FieldError>{addressErrors.street?.message}</FieldError>
                 </div>
                 <div>
                   <FieldLabel>Número</FieldLabel>
                   <Input
                     placeholder="123"
+                    inputMode="numeric"
                     value={address.number}
-                    onChange={(e) => setField("number", e.target.value)}
-                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                    onChange={(e) => handleNumberChange(e.target.value)}
+                    className={inputClass(!!addressErrors.number)}
+                    maxLength={6}
                   />
+                  <FieldError>{addressErrors.number?.message}</FieldError>
                 </div>
               </div>
 
@@ -332,7 +383,7 @@ export function Checkout() {
                     placeholder="Apto, bloco, referência..."
                     value={address.complement}
                     onChange={(e) => setField("complement", e.target.value)}
-                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                    className={inputClass(false)}
                   />
                 </div>
 
@@ -342,8 +393,9 @@ export function Checkout() {
                     placeholder="Seu bairro"
                     value={address.neighborhood}
                     onChange={(e) => setField("neighborhood", e.target.value)}
-                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                    className={inputClass(!!addressErrors.neighborhood)}
                   />
+                  <FieldError>{addressErrors.neighborhood?.message}</FieldError>
                 </div>
               </div>
 
@@ -353,29 +405,31 @@ export function Checkout() {
                   <Input
                     placeholder="Cidade"
                     value={address.city}
-                    onChange={(e) => setField("city", e.target.value)}
-                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    className={inputClass(!!addressErrors.city)}
                   />
+                  <FieldError>{addressErrors.city?.message}</FieldError>
                 </div>
                 <div>
                   <FieldLabel>UF</FieldLabel>
                   <Input
                     placeholder="CE"
                     value={address.state}
-                    onChange={(e) => setField("state", e.target.value.toUpperCase().slice(0, 2))}
-                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                    onChange={(e) => handleStateChange(e.target.value)}
+                    className={inputClass(!!addressErrors.state)}
                     maxLength={2}
                   />
+                  <FieldError>{addressErrors.state?.message}</FieldError>
                 </div>
               </div>
             </div>
 
             <div className="mt-8">
-              <ActionButton onClick={() => goTo(2)} disabled={!isAddressValid}>
+              <ActionButton onClick={onAddressContinue}>
                 Continuar <ArrowRight className="w-4 h-4" />
               </ActionButton>
-              {!isAddressValid && (
-                <p className="text-center text-xs text-muted-foreground mt-3">
+              {addressAttempted && Object.keys(addressErrors).length > 0 && (
+                <p className="text-center text-xs font-medium text-destructive mt-3">
                   Preencha todos os campos obrigatórios
                 </p>
               )}
