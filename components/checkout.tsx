@@ -1,0 +1,732 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Cookie,
+  MapPin,
+  CreditCard,
+  Banknote,
+  QrCode,
+  ChevronRight,
+  Loader2,
+  Check,
+  Truck,
+  AlertTriangle,
+  Pencil,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { useCart } from "@/lib/cart-context";
+
+const SELLER_WHATSAPP = "5585992737489";
+const FREE_DELIVERY_THRESHOLD = 50;
+const DELIVERY_FEE = 8.9;
+
+const fmt = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+type PaymentMethod = "pix" | "credit" | "cash";
+type Direction = "forward" | "back";
+
+type AddressForm = {
+  cep: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+};
+
+type ViaCepResponse = {
+  logradouro: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+  erro?: boolean;
+};
+
+const PAYMENT_OPTIONS: {
+  id: PaymentMethod;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  badge?: string;
+}[] = [
+  {
+    id: "pix",
+    label: "PIX",
+    description: "Aprovação imediata",
+    icon: <QrCode className="w-7 h-7" />,
+    badge: "5% OFF",
+  },
+  {
+    id: "credit",
+    label: "Cartão de crédito",
+    description: "Até 3× sem juros",
+    icon: <CreditCard className="w-7 h-7" />,
+  },
+  {
+    id: "cash",
+    label: "Dinheiro na entrega",
+    description: "Pague ao receber",
+    icon: <Banknote className="w-7 h-7" />,
+  },
+];
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.112 1.524 5.84L.057 23.486a.75.75 0 0 0 .918.919l5.725-1.498A11.952 11.952 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.737 9.737 0 0 1-4.964-1.355l-.355-.212-3.698.968.985-3.6-.232-.371A9.738 9.738 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z" />
+    </svg>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+      {children}
+    </label>
+  );
+}
+
+export function Checkout() {
+  const router = useRouter();
+  const { cart, cartCount, cartTotal, delivery, orderTotal } = useCart();
+
+  const [step, setStep] = useState(1);
+  const directionRef = useRef<Direction>("forward");
+
+  const [address, setAddress] = useState<AddressForm>({
+    cep: "",
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+  });
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState("");
+  const [payment, setPayment] = useState<PaymentMethod>("pix");
+  const [change, setChange] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const pixDiscount = payment === "pix" ? cartTotal * 0.05 : 0;
+  const finalTotal = orderTotal - pixDiscount;
+
+  const isAddressValid =
+    address.cep.replace(/\D/g, "").length === 8 &&
+    address.street.trim() !== "" &&
+    address.number.trim() !== "" &&
+    address.neighborhood.trim() !== "" &&
+    address.city.trim() !== "";
+
+  const goTo = (target: number) => {
+    directionRef.current = target > step ? "forward" : "back";
+    setStep(target);
+  };
+
+  const setField = (field: keyof AddressForm, value: string) =>
+    setAddress((prev) => ({ ...prev, [field]: value }));
+
+  const lookupCep = async () => {
+    const clean = address.cep.replace(/\D/g, "");
+    if (clean.length !== 8) { setCepError("CEP deve ter 8 dígitos"); return; }
+    setCepLoading(true);
+    setCepError("");
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+      const data: ViaCepResponse = await res.json();
+      if (data.erro) { setCepError("CEP não encontrado"); return; }
+      setAddress((prev) => ({
+        ...prev,
+        street: data.logradouro,
+        neighborhood: data.bairro,
+        city: data.localidade,
+        state: data.uf,
+      }));
+    } catch {
+      setCepError("Erro ao buscar CEP. Tente novamente.");
+    } finally {
+      setCepLoading(false);
+    }
+  };
+
+  const handleCepChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    const formatted = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+    setField("cep", formatted);
+    setCepError("");
+  };
+
+  const buildMessage = () => {
+    const lines: string[] = [];
+    lines.push("🍪 *Novo Pedido — Lolo Cookies*");
+    lines.push("");
+    lines.push("*Itens do pedido:*");
+    for (const entry of cart) {
+      lines.push(`• ${entry.quantity}× ${entry.name} — ${fmt(entry.price * entry.quantity)}`);
+    }
+    lines.push("");
+    lines.push(`*Subtotal:* ${fmt(cartTotal)}`);
+    lines.push(`*Taxa de entrega:* ${delivery === 0 ? "Grátis 🎉" : fmt(delivery)}`);
+    if (pixDiscount > 0) lines.push(`*Desconto PIX (5%):* -${fmt(pixDiscount)}`);
+    lines.push(`*💰 Total: ${fmt(finalTotal)}*`);
+    lines.push("");
+    const paymentLabels: Record<PaymentMethod, string> = {
+      pix: "PIX (5% de desconto)",
+      credit: "Cartão de crédito (até 3× sem juros)",
+      cash: change.trim() ? `Dinheiro na entrega — troco para ${change}` : "Dinheiro na entrega",
+    };
+    lines.push(`*Pagamento:* ${paymentLabels[payment]}`);
+    lines.push("");
+    lines.push("*📍 Endereço de entrega:*");
+    lines.push(`${address.street}, ${address.number}${address.complement ? ` — ${address.complement}` : ""}`);
+    lines.push(address.neighborhood);
+    lines.push(`${address.city}/${address.state}`);
+    lines.push(`CEP: ${address.cep}`);
+    return lines.join("\n");
+  };
+
+  const handleSendWhatsApp = () => {
+    window.open(`https://wa.me/${SELLER_WHATSAPP}?text=${encodeURIComponent(buildMessage())}`, "_blank");
+    setSent(true);
+  };
+
+  const animClass = directionRef.current === "forward" ? "animate-step-forward" : "animate-step-back";
+
+  // ── Empty cart ──────────────────────────────────────────────────────────────
+  if (cart.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <CheckoutHeader step={0} totalSteps={3} onBack={() => router.back()} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
+          <span className="text-7xl select-none">🍪</span>
+          <h2 className="font-heading text-3xl font-black">Carrinho vazio</h2>
+          <p className="text-muted-foreground">Adicione cookies antes de finalizar.</p>
+          <ActionButton onClick={() => router.push("/")}>Ver catálogo</ActionButton>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <CheckoutHeader
+        step={step}
+        totalSteps={3}
+        onBack={step > 1 ? () => goTo(step - 1) : () => router.back()}
+      />
+
+      {/* Progress bar */}
+      <div className="h-[3px] bg-border w-full">
+        <div
+          className="h-full transition-all duration-500 ease-out"
+          style={{ width: `${(step / 3) * 100}%`, backgroundColor: "var(--brand-sage)" }}
+        />
+      </div>
+
+      <main className="flex-1 w-full max-w-md mx-auto px-5 py-8 overflow-y-auto">
+
+        {/* ── Step 1: Endereço ──────────────────────────────────────────────── */}
+        {step === 1 && (
+          <div key="step-1" className={animClass}>
+            <StepTitle
+              title="Onde entregamos?"
+              subtitle="Informe seu endereço para calcularmos o frete."
+            />
+
+            {/* Delivery fee card */}
+            <div
+              className="mt-6 bg-card rounded-2xl p-5 border-l-4 border border-border"
+              style={{ borderLeftColor: "var(--brand-sage)", borderLeftWidth: "4px" }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Truck className="w-4 h-4" style={{ color: "var(--brand-sage)" }} />
+                <span className="font-heading font-bold text-sm">Taxa de entrega</span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Grátis para pedidos acima de <strong className="text-foreground">{fmt(FREE_DELIVERY_THRESHOLD)}</strong>.
+                Abaixo disso, <strong className="text-foreground">{fmt(DELIVERY_FEE)}</strong>.
+              </p>
+              {cartTotal >= FREE_DELIVERY_THRESHOLD ? (
+                <p className="mt-2 text-sm font-bold" style={{ color: "var(--brand-sage)" }}>
+                  ✓ Seu pedido já tem entrega grátis!
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Faltam <strong className="text-foreground">{fmt(FREE_DELIVERY_THRESHOLD - cartTotal)}</strong> para entrega grátis.
+                </p>
+              )}
+            </div>
+
+            {/* CEP */}
+            <div className="mt-6">
+              <FieldLabel>CEP</FieldLabel>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="00000-000"
+                  value={address.cep}
+                  onChange={(e) => handleCepChange(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && lookupCep()}
+                  className="rounded-xl h-14 text-lg font-heading font-semibold flex-1 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                  maxLength={9}
+                />
+                <button
+                  onClick={lookupCep}
+                  disabled={cepLoading}
+                  className="h-14 px-5 rounded-xl font-heading font-bold text-sm border-2 border-foreground bg-foreground text-background hover:opacity-80 transition-opacity disabled:opacity-40 shrink-0 flex items-center gap-2"
+                >
+                  {cepLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Buscar <ChevronRight className="w-4 h-4" /></>}
+                </button>
+              </div>
+              {cepError && <p className="mt-2 text-sm font-medium text-destructive">{cepError}</p>}
+            </div>
+
+            {/* Address fields */}
+            <div className="mt-4 flex flex-col gap-4">
+              <div className="grid grid-cols-[1fr_100px] gap-3">
+                <div>
+                  <FieldLabel>Rua / Avenida</FieldLabel>
+                  <Input
+                    placeholder="Nome da rua"
+                    value={address.street}
+                    onChange={(e) => setField("street", e.target.value)}
+                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                  />
+                </div>
+                <div>
+                  <FieldLabel>Número</FieldLabel>
+                  <Input
+                    placeholder="123"
+                    value={address.number}
+                    onChange={(e) => setField("number", e.target.value)}
+                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel>Complemento <span className="normal-case font-normal tracking-normal">(opcional)</span></FieldLabel>
+                <Input
+                  placeholder="Apto, bloco, referência..."
+                  value={address.complement}
+                  onChange={(e) => setField("complement", e.target.value)}
+                  className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                />
+              </div>
+
+              <div>
+                <FieldLabel>Bairro</FieldLabel>
+                <Input
+                  placeholder="Seu bairro"
+                  value={address.neighborhood}
+                  onChange={(e) => setField("neighborhood", e.target.value)}
+                  className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-[1fr_80px] gap-3">
+                <div>
+                  <FieldLabel>Cidade</FieldLabel>
+                  <Input
+                    placeholder="Cidade"
+                    value={address.city}
+                    onChange={(e) => setField("city", e.target.value)}
+                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                  />
+                </div>
+                <div>
+                  <FieldLabel>UF</FieldLabel>
+                  <Input
+                    placeholder="CE"
+                    value={address.state}
+                    onChange={(e) => setField("state", e.target.value.toUpperCase().slice(0, 2))}
+                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                    maxLength={2}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <ActionButton onClick={() => goTo(2)} disabled={!isAddressValid}>
+                Continuar <ArrowRight className="w-4 h-4" />
+              </ActionButton>
+              {!isAddressValid && (
+                <p className="text-center text-xs text-muted-foreground mt-3">
+                  Preencha todos os campos obrigatórios
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2: Pagamento ─────────────────────────────────────────────── */}
+        {step === 2 && (
+          <div key="step-2" className={animClass}>
+            <StepTitle
+              title="Como vai pagar?"
+              subtitle="Escolha a forma de pagamento."
+            />
+
+            <div className="mt-6 flex flex-col gap-3">
+              {PAYMENT_OPTIONS.map((opt) => {
+                const selected = payment === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setPayment(opt.id)}
+                    className="w-full p-5 rounded-2xl border-2 flex items-center gap-5 text-left transition-all duration-200 active:scale-[0.98]"
+                    style={
+                      selected
+                        ? { backgroundColor: "var(--brand-sage)", borderColor: "var(--brand-sage)" }
+                        : { borderColor: "var(--border)", backgroundColor: "var(--card)" }
+                    }
+                  >
+                    <div
+                      className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+                      style={
+                        selected
+                          ? { backgroundColor: "rgba(255,255,255,0.18)", color: "white" }
+                          : { backgroundColor: "var(--secondary)", color: "var(--muted-foreground)" }
+                      }
+                    >
+                      {opt.icon}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="font-heading text-xl font-bold"
+                          style={{ color: selected ? "white" : "var(--foreground)" }}
+                        >
+                          {opt.label}
+                        </span>
+                        {opt.badge && (
+                          <span
+                            className="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                            style={
+                              selected
+                                ? { backgroundColor: "rgba(255,255,255,0.22)", color: "white" }
+                                : { backgroundColor: "var(--brand-amber)", color: "white" }
+                            }
+                          >
+                            {opt.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        className="text-sm mt-0.5"
+                        style={{ color: selected ? "rgba(255,255,255,0.75)" : "var(--muted-foreground)" }}
+                      >
+                        {opt.description}
+                      </p>
+                    </div>
+                    <div
+                      className="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0"
+                      style={
+                        selected
+                          ? { borderColor: "white", backgroundColor: "white" }
+                          : { borderColor: "var(--border)" }
+                      }
+                    >
+                      {selected && (
+                        <Check className="w-3.5 h-3.5 stroke-[3]" style={{ color: "var(--brand-sage)" }} />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {payment === "cash" && (
+              <div className="mt-4 bg-card rounded-2xl p-5 border-2 border-border">
+                <FieldLabel>Troco para quanto? <span className="normal-case font-normal tracking-normal">(opcional)</span></FieldLabel>
+                <Input
+                  placeholder="Ex: R$ 100,00"
+                  value={change}
+                  onChange={(e) => setChange(e.target.value)}
+                  className="rounded-xl h-12 border-2 max-w-[180px] focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                />
+              </div>
+            )}
+
+            {payment === "pix" && (
+              <div
+                className="mt-4 bg-card rounded-2xl p-5 border border-border border-l-4"
+                style={{ borderLeftColor: "var(--brand-amber)", borderLeftWidth: "4px" }}
+              >
+                <p className="font-heading font-bold text-sm mb-1">Como funciona o PIX</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Após enviar o pedido pelo WhatsApp, o vendedor te manda o QR Code do PIX.
+                  O desconto de <strong className="text-foreground">5%</strong> já está no total.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-8">
+              <ActionButton onClick={() => goTo(3)}>
+                Continuar <ArrowRight className="w-4 h-4" />
+              </ActionButton>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 3: Revisão ───────────────────────────────────────────────── */}
+        {step === 3 && (
+          <div key="step-3" className={animClass}>
+            <StepTitle
+              title="Tudo certo?"
+              subtitle="Revise seu pedido antes de enviar."
+            />
+
+            {/* Warning */}
+            <div
+              className="mt-6 bg-card rounded-2xl p-5 border border-border border-l-4"
+              style={{ borderLeftColor: "var(--brand-amber)", borderLeftWidth: "4px" }}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: "var(--brand-amber)" }} />
+                <p className="font-heading font-bold text-sm">Confira todas as informações!</p>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                O botão abre o WhatsApp com a mensagem pronta. Você ainda precisa tocar em{" "}
+                <strong className="text-foreground">Enviar</strong> para confirmar o pedido com o vendedor.
+              </p>
+            </div>
+
+            {/* Items */}
+            <div className="mt-5 bg-card border-2 border-border rounded-2xl overflow-hidden">
+              <div className="px-5 pt-4 pb-3 flex items-center justify-between">
+                <span className="font-heading font-bold text-base">
+                  Itens
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {cartCount} {cartCount === 1 ? "item" : "itens"}
+                </span>
+              </div>
+              <Separator />
+              <div className="divide-y divide-border">
+                {cart.map((entry) => (
+                  <div key={entry.id} className="flex items-center gap-3 px-5 py-3.5">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xl"
+                      style={{ backgroundColor: entry.visual.bg }}
+                    >
+                      {entry.visual.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-heading font-bold text-sm truncate">{entry.name}</p>
+                      <p className="text-xs text-muted-foreground">{entry.quantity}× {fmt(entry.price)}</p>
+                    </div>
+                    <span className="font-heading font-bold text-sm shrink-0">
+                      {fmt(entry.price * entry.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Address + Payment summary */}
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="bg-card border-2 border-border rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" style={{ color: "var(--brand-amber)" }} />
+                    <span className="font-heading font-bold text-xs">Endereço</span>
+                  </div>
+                  <button
+                    onClick={() => goTo(1)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-foreground font-semibold leading-snug">
+                  {address.street}, {address.number}
+                </p>
+                <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+                  {address.neighborhood}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {address.city}/{address.state}
+                </p>
+              </div>
+
+              <div className="bg-card border-2 border-border rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
+                    <span className="font-heading font-bold text-xs">Pagamento</span>
+                  </div>
+                  <button
+                    onClick={() => goTo(2)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-foreground font-semibold leading-snug">
+                  {payment === "pix" && "PIX"}
+                  {payment === "credit" && "Cartão de crédito"}
+                  {payment === "cash" && "Dinheiro"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {payment === "pix" && "5% de desconto"}
+                  {payment === "credit" && "Até 3× sem juros"}
+                  {payment === "cash" && (change.trim() ? `Troco p/ ${change}` : "Na entrega")}
+                </p>
+              </div>
+            </div>
+
+            {/* Totals */}
+            <div className="mt-3 bg-card border-2 border-border rounded-2xl p-5">
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-semibold">{fmt(cartTotal)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Entrega</span>
+                  <span
+                    className="font-semibold"
+                    style={{ color: delivery === 0 ? "var(--brand-sage)" : "var(--foreground)" }}
+                  >
+                    {delivery === 0 ? "Grátis 🎉" : fmt(delivery)}
+                  </span>
+                </div>
+                {pixDiscount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Desconto PIX (5%)</span>
+                    <span className="font-semibold" style={{ color: "var(--brand-sage)" }}>
+                      -{fmt(pixDiscount)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <Separator className="my-4" />
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground font-medium">Total</span>
+                <span
+                  className="font-heading text-4xl font-black tracking-tight"
+                  style={{ color: "var(--brand-amber)" }}
+                >
+                  {fmt(finalTotal)}
+                </span>
+              </div>
+            </div>
+
+            {/* WhatsApp button */}
+            <div className="mt-5">
+              {!sent ? (
+                <button
+                  onClick={handleSendWhatsApp}
+                  className="w-full h-16 rounded-2xl font-heading text-lg font-black gap-3 flex items-center justify-center text-white transition-all duration-200 active:scale-[0.97]"
+                  style={{ backgroundColor: "#25D366" }}
+                >
+                  <WhatsAppIcon className="w-6 h-6" />
+                  Enviar pedido pelo WhatsApp
+                </button>
+              ) : (
+                <div className="border-2 rounded-2xl p-6 text-center flex flex-col items-center gap-3" style={{ borderColor: "#25D366" }}>
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: "#25D366" }}>
+                    <Check className="w-7 h-7 text-white stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <p className="font-heading font-black text-xl">WhatsApp aberto!</p>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                      Envie a mensagem para confirmar. O vendedor entrará em contato em breve.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => router.push("/")}
+                    className="text-sm font-semibold underline underline-offset-2 text-muted-foreground hover:text-foreground transition-colors mt-1"
+                  >
+                    Voltar ao catálogo
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function CheckoutHeader({
+  step,
+  totalSteps,
+  onBack,
+}: {
+  step: number;
+  totalSteps: number;
+  onBack: () => void;
+}) {
+  return (
+    <header className="sticky top-0 z-40 bg-background border-b border-border">
+      <div className="max-w-md mx-auto px-5 h-16 flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-border hover:border-foreground transition-colors active:scale-95"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+
+        <a href="/" className="flex items-center gap-2" aria-label="Lolo Cookies">
+          <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
+          <span className="font-heading text-lg font-bold tracking-tight" style={{ color: "var(--brand-sage)" }}>
+            Lolo Cookies
+          </span>
+        </a>
+
+        {step > 0 ? (
+          <span className="font-heading text-sm font-bold text-muted-foreground tabular-nums">
+            {step}/{totalSteps}
+          </span>
+        ) : (
+          <div className="w-10" />
+        )}
+      </div>
+    </header>
+  );
+}
+
+function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div>
+      <h1 className="font-heading text-4xl font-black tracking-tight leading-tight">
+        {title}
+      </h1>
+      <p className="mt-2 text-muted-foreground">{subtitle}</p>
+    </div>
+  );
+}
+
+function ActionButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full h-14 rounded-2xl font-heading text-base font-black flex items-center justify-center gap-2 text-white transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+      style={{ backgroundColor: "var(--brand-sage)" }}
+    >
+      {children}
+    </button>
+  );
+}

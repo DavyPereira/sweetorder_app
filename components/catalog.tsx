@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   ShoppingCart,
   Search,
@@ -22,17 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-
-type CookieItem = {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  visual: { bg: string; emoji: string };
-};
-
-type CartEntry = CookieItem & { quantity: number };
+import { useCart, type CookieItem, type CartEntry } from "@/lib/cart-context";
 
 const COOKIES: CookieItem[] = [
   {
@@ -260,13 +251,10 @@ function CartItemRow({
 export function Catalog() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
-  const [cart, setCart] = useState<CartEntry[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const router = useRouter();
 
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
-  const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const delivery = cartTotal >= 50 ? 0 : 8.9;
-  const orderTotal = cartTotal + delivery;
+  const { cart, cartCount, cartTotal, delivery, orderTotal, addToCart, removeFromCart, deleteFromCart, clearCart } = useCart();
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -278,29 +266,6 @@ export function Catalog() {
   }, [search, category]);
 
   const getQty = (id: number) => cart.find((i) => i.id === id)?.quantity ?? 0;
-
-  const addToCart = (cookie: CookieItem) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.id === cookie.id);
-      if (existing)
-        return prev.map((i) =>
-          i.id === cookie.id ? { ...i, quantity: i.quantity + 1 } : i
-        );
-      return [...prev, { ...cookie, quantity: 1 }];
-    });
-  };
-
-  const removeFromCart = (id: number) => {
-    setCart((prev) => {
-      const item = prev.find((i) => i.id === id);
-      if (!item) return prev;
-      if (item.quantity === 1) return prev.filter((i) => i.id !== id);
-      return prev.map((i) => (i.id === id ? { ...i, quantity: i.quantity - 1 } : i));
-    });
-  };
-
-  const deleteFromCart = (id: number) =>
-    setCart((prev) => prev.filter((i) => i.id !== id));
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
@@ -320,16 +285,16 @@ export function Catalog() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-          <a href="/" className="flex items-center gap-2 shrink-0" aria-label="SweetOrder">
+          <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Lolo Cookies">
             <Cookie
               className="w-5 h-5 transition-transform duration-500 hover:rotate-12"
               style={{ color: "var(--brand-sage)" }}
             />
             <span
-              className="font-heading text-xl font-bold tracking-tight hidden sm:block"
+              className="font-heading text-xl font-bold tracking-tight"
               style={{ color: "var(--brand-sage)" }}
             >
-              SweetOrder
+              Lolo Cookies
             </span>
           </a>
 
@@ -396,6 +361,15 @@ export function Catalog() {
           🍫
         </span>
 
+        {/* Logo Lolo Cookies — somente desktop */}
+        <img
+          aria-hidden
+          src="/logo.png"
+          alt=""
+          className="pointer-events-none select-none absolute hidden sm:block sm:w-[320px] sm:right-[2%] sm:top-1/2 sm:-translate-y-1/2"
+          style={{ mixBlendMode: "multiply", zIndex: 1 }}
+        />
+
         <h1
           className="font-heading text-5xl sm:text-6xl lg:text-7xl font-black leading-none tracking-tight text-foreground animate-slide-up"
           style={{ animationDelay: "0s" }}
@@ -457,7 +431,6 @@ export function Catalog() {
           ))}
         </div>
       </section>
-
 
       {/* ── Cookie grid ─────────────────────────────────────────────────────── */}
       <main className="relative flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16">
@@ -605,13 +578,16 @@ export function Catalog() {
                   )}
                 </div>
 
-                <Button className="w-full h-12 rounded-full font-heading text-base font-bold gap-2 active:scale-[0.98] transition-transform">
+                <Button
+                  className="w-full h-12 rounded-full font-heading text-base font-bold gap-2 active:scale-[0.98] transition-transform"
+                  onClick={() => { setCartOpen(false); router.push("/checkout"); }}
+                >
                   Finalizar pedido
                   <ArrowRight className="w-4 h-4" />
                 </Button>
 
                 <button
-                  onClick={() => setCart([])}
+                  onClick={clearCart}
                   className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
                 >
                   Limpar carrinho

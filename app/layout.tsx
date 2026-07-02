@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { CartProvider } from "@/lib/cart-context";
 
 const tomatoGrotesk = localFont({
   src: [
@@ -66,7 +67,9 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${tomatoGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <CartProvider>{children}</CartProvider>
+      </body>
     </html>
   );
 }
