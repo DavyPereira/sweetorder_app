@@ -104,7 +104,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+    <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">
       {children}
     </label>
   );
@@ -115,7 +115,7 @@ function FieldError({ children }: { children?: string }) {
   return <p className="mt-1.5 text-xs font-medium text-destructive">{children}</p>;
 }
 
-function inputClass(hasError: boolean, base = "rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors") {
+function inputClass(hasError: boolean, base = "rounded-xl h-12 px-4 py-0 leading-[2.75rem] border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors") {
   return cn(base, hasError && "border-destructive focus-visible:border-destructive");
 }
 
@@ -334,14 +334,14 @@ export function Checkout() {
                   onKeyDown={(e) => e.key === "Enter" && lookupCep()}
                   className={inputClass(
                     !!cepError || !!addressErrors.cep,
-                    "rounded-xl h-14 text-lg font-heading font-semibold flex-1 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                    "rounded-xl h-12 px-4 py-0 leading-[2.75rem] flex-1 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
                   )}
                   maxLength={9}
                 />
                 <button
                   onClick={lookupCep}
                   disabled={cepLoading}
-                  className="h-14 px-5 rounded-xl font-heading font-bold text-sm border-2 border-foreground bg-foreground text-background cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:opacity-40 shrink-0 flex items-center gap-2"
+                  className="h-12 px-5 rounded-xl font-heading font-bold text-sm border-2 border-foreground bg-foreground text-background cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:opacity-40 shrink-0 flex items-center justify-center gap-2"
                 >
                   {cepLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Buscar <ChevronRight className="w-4 h-4" /></>}
                 </button>
@@ -350,8 +350,8 @@ export function Checkout() {
             </div>
 
             {/* Address fields */}
-            <div className="mt-4 flex flex-col gap-4">
-              <div className="grid grid-cols-[1fr_100px] gap-3">
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="grid grid-cols-[1fr_100px] gap-2">
                 <div>
                   <FieldLabel>Rua / Avenida</FieldLabel>
                   <Input
@@ -376,7 +376,7 @@ export function Checkout() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <FieldLabel>Complemento <span className="normal-case font-normal tracking-normal">(opcional)</span></FieldLabel>
                   <Input
@@ -399,7 +399,7 @@ export function Checkout() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-[1fr_80px] gap-3">
+              <div className="grid grid-cols-[1fr_80px] gap-2">
                 <div>
                   <FieldLabel>Cidade</FieldLabel>
                   <Input
