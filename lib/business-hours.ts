@@ -1,15 +1,20 @@
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import type { BusinessHourDayDTO } from "@/lib/types";
 
 export async function getBusinessHours(): Promise<BusinessHourDayDTO[]> {
-  const shifts = await prisma.businessHourShift.findMany({
-    orderBy: [{ dayOfWeek: "asc" }, { sortOrder: "asc" }],
-  });
+  const supabase = await createClient();
+  const { data: shifts, error } = await supabase
+    .from("business_hour_shifts")
+    .select("*")
+    .order("day_of_week", { ascending: true })
+    .order("sort_order", { ascending: true });
+
+  if (error) throw error;
 
   return Array.from({ length: 7 }, (_, dayOfWeek) => {
     const dayShifts = shifts
-      .filter((s) => s.dayOfWeek === dayOfWeek)
-      .map((s) => ({ openTime: s.openTime, closeTime: s.closeTime }));
+      .filter((s) => s.day_of_week === dayOfWeek)
+      .map((s) => ({ openTime: s.open_time, closeTime: s.close_time }));
 
     return {
       dayOfWeek,

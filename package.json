@@ -16,6 +16,8 @@
     "@hookform/resolvers": "^5.4.0",
     "@prisma/adapter-better-sqlite3": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.109.0",
     "@tanstack/react-query": "^5.101.0",
     "axios": "^1.18.0",
     "bcryptjs": "^3.0.3",

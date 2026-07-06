@@ -1,35 +1,43 @@
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import type { ProductAdminDTO, ProductDTO } from "@/lib/types";
 
 export async function getActiveProducts(): Promise<ProductDTO[]> {
-  const rows = await prisma.product.findMany({
-    where: { active: true },
-    orderBy: { sortOrder: "asc" },
-  });
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("active", true)
+    .order("sort_order", { ascending: true });
 
-  return rows.map((p) => ({
+  if (error) throw error;
+
+  return data.map((p) => ({
     id: p.id,
     name: p.name,
     description: p.description,
     price: p.price,
     category: p.category,
-    visual: { bg: p.visualBg, emoji: p.visualEmoji },
+    visual: { bg: p.visual_bg, emoji: p.visual_emoji },
   }));
 }
 
 export async function getAllProductsForAdmin(): Promise<ProductAdminDTO[]> {
-  const rows = await prisma.product.findMany({
-    orderBy: { sortOrder: "asc" },
-  });
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("sort_order", { ascending: true });
 
-  return rows.map((p) => ({
+  if (error) throw error;
+
+  return data.map((p) => ({
     id: p.id,
     name: p.name,
     description: p.description,
     price: p.price,
     category: p.category,
-    visual: { bg: p.visualBg, emoji: p.visualEmoji },
+    visual: { bg: p.visual_bg, emoji: p.visual_emoji },
     active: p.active,
-    sortOrder: p.sortOrder,
+    sortOrder: p.sort_order,
   }));
 }
