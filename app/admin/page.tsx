@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { ArrowRight, Cookie, Layers, Package, Store } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentAdmin } from "@/lib/session-helpers";
 
 export default async function AdminDashboardPage() {
   const admin = await getCurrentAdmin();
+  const supabase = await createClient();
 
-  const [totalProducts, activeProducts, categories] = await Promise.all([
-    prisma.product.count(),
-    prisma.product.count({ where: { active: true } }),
-    prisma.product.findMany({ distinct: ["category"], select: { category: true } }),
-  ]);
+  const [{ count: totalProducts }, { count: activeProducts }, { data: categoryRows }] =
+    await Promise.all([
+      supabase.from("products").select("*", { count: "exact", head: true }),
+      supabase.from("products").select("*", { count: "exact", head: true }).eq("active", true),
+      supabase.from("products").select("category"),
+    ]);
+  const categories = new Set((categoryRows ?? []).map((p) => p.category));
 
   return (
     <div>
@@ -22,9 +25,9 @@ export default async function AdminDashboardPage() {
       </p>
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard icon={<Package className="w-4 h-4" />} label="Produtos" value={totalProducts} color="var(--brand-sage)" />
-        <StatCard icon={<Cookie className="w-4 h-4" />} label="Ativos no catálogo" value={activeProducts} color="var(--brand-amber)" />
-        <StatCard icon={<Layers className="w-4 h-4" />} label="Categorias" value={categories.length} color="var(--brand-sage)" />
+        <StatCard icon={<Package className="w-4 h-4" />} label="Produtos" value={totalProducts ?? 0} color="var(--brand-sage)" />
+        <StatCard icon={<Cookie className="w-4 h-4" />} label="Ativos no catálogo" value={activeProducts ?? 0} color="var(--brand-amber)" />
+        <StatCard icon={<Layers className="w-4 h-4" />} label="Categorias" value={categories.size} color="var(--brand-sage)" />
       </div>
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">

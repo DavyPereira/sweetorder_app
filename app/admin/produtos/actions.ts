@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/session-helpers";
 
 const productSchema = z.object({
@@ -30,10 +30,24 @@ export async function createProduct(data: ProductInput): Promise<ProductActionSt
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
-  const last = await prisma.product.findFirst({ orderBy: { sortOrder: "desc" } });
-  await prisma.product.create({
-    data: { ...parsed.data, sortOrder: (last?.sortOrder ?? 0) + 1 },
+  const supabase = await createClient();
+  const { data: last } = await supabase
+    .from("products")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { error } = await supabase.from("products").insert({
+    name: parsed.data.name,
+    description: parsed.data.description,
+    price: parsed.data.price,
+    category: parsed.data.category,
+    visual_bg: parsed.data.visualBg,
+    visual_emoji: parsed.data.visualEmoji,
+    sort_order: (last?.sort_order ?? 0) + 1,
   });
+  if (error) return { error: "Erro ao criar produto" };
 
   revalidateProductPaths();
   return {};
@@ -44,19 +58,34 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
-  await prisma.product.update({ where: { id }, data: parsed.data });
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("products")
+    .update({
+      name: parsed.data.name,
+      description: parsed.data.description,
+      price: parsed.data.price,
+      category: parsed.data.category,
+      visual_bg: parsed.data.visualBg,
+      visual_emoji: parsed.data.visualEmoji,
+    })
+    .eq("id", id);
+  if (error) return { error: "Erro ao atualizar produto" };
+
   revalidateProductPaths();
   return {};
 }
 
 export async function deleteProduct(id: string) {
   await requireAdmin();
-  await prisma.product.delete({ where: { id } });
+  const supabase = await createClient();
+  await supabase.from("products").delete().eq("id", id);
   revalidateProductPaths();
 }
 
 export async function toggleProductActive(id: string, active: boolean) {
   await requireAdmin();
-  await prisma.product.update({ where: { id }, data: { active } });
+  const supabase = await createClient();
+  await supabase.from("products").update({ active }).eq("id", id);
   revalidateProductPaths();
 }

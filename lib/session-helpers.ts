@@ -1,14 +1,26 @@
-import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
-export async function getCurrentAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) return null;
-  return verifySessionToken(token);
+export type CurrentAdmin = {
+  id: string;
+  email: string;
+  name: string;
+};
+
+export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    name: (user.user_metadata?.name as string | undefined) ?? "Admin",
+  };
 }
 
-export async function requireAdmin() {
+export async function requireAdmin(): Promise<CurrentAdmin> {
   const admin = await getCurrentAdmin();
   if (!admin) throw new Error("Não autorizado");
   return admin;
