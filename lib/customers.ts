@@ -79,13 +79,11 @@ export type NewAddressInput = {
   state: string;
 };
 
-export async function saveCustomerOrder(params: {
+export async function upsertCustomer(params: {
   storeId: string;
   name: string;
   phone: string;
-  addressId?: string;
-  newAddress?: NewAddressInput;
-}): Promise<void> {
+}): Promise<string> {
   const admin = createAdminClient();
 
   const { data: customer, error: customerError } = await admin
@@ -98,11 +96,16 @@ export async function saveCustomerOrder(params: {
     .single();
   if (customerError || !customer) throw customerError ?? new Error("Erro ao salvar cliente");
 
-  if (params.newAddress) {
-    const { error: addressError } = await admin.from("customer_addresses").insert({
-      customer_id: customer.id,
-      ...params.newAddress,
-    });
-    if (addressError) throw addressError;
-  }
+  return customer.id;
+}
+
+export async function saveCustomerAddress(
+  customerId: string,
+  address: NewAddressInput
+): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("customer_addresses")
+    .insert({ customer_id: customerId, ...address });
+  if (error) throw error;
 }

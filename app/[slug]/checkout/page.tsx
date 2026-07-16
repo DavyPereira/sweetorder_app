@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Checkout } from "@/components/checkout";
 import { getStoreBySlug } from "@/lib/settings";
+import { getBusinessHours } from "@/lib/business-hours";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -14,5 +15,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ slug:
   const settings = await getStoreBySlug(slug);
   if (!settings) notFound();
 
-  return <Checkout settings={settings} slug={slug} />;
+  const businessHours = await getBusinessHours(settings.id);
+
+  return <Checkout settings={settings} slug={slug} businessHours={businessHours} />;
 }

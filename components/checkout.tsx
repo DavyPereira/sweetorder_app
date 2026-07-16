@@ -29,9 +29,12 @@ import { useCart } from "@/lib/cart-context";
 import { ActionButton, FieldError, FieldLabel, inputClass } from "@/components/form-kit";
 import { renderWhatsAppTemplate } from "@/lib/whatsapp-template";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
-import { lookupCustomerAction, saveCustomerOrderAction } from "@/app/[slug]/checkout/actions";
+import { formatPhone } from "@/lib/phone";
+import { lookupCustomerAction, submitOrderAction } from "@/app/[slug]/checkout/actions";
 import type { CustomerLookupResult } from "@/lib/customers";
-import type { StoreSettingsDTO } from "@/lib/types";
+import type { StoreSettingsDTO, BusinessHourDayDTO } from "@/lib/types";
+import type { CartEntry } from "@/lib/cart-context";
+import { getBusinessHoursStatus, type BusinessHoursStatus } from "@/lib/business-hours-status";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -150,18 +153,27 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-function formatPhone(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
-
-export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug: string }) {
+export function Checkout({
+  settings,
+  slug,
+  businessHours,
+}: {
+  settings: StoreSettingsDTO;
+  slug: string;
+  businessHours: BusinessHourDayDTO[];
+}) {
   const router = useRouter();
   const { cart, cartCount, cartTotal, delivery, orderTotal, clearCart } = useCart();
   const { storeName, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee } = settings;
+
+  const [hoursStatus, setHoursStatus] = useState<BusinessHoursStatus | null>(null);
+  useEffect(() => {
+    // Calculado no client (hora local convertida pro fuso da loja) de propósito, pra não
+    // divergir do HTML gerado no servidor e causar mismatch de hidratação — mesmo padrão
+    // usado no catálogo (components/catalog.tsx).
+    setHoursStatus(getBusinessHoursStatus(businessHours));
+  }, [businessHours]);
+  const isClosed = !!hoursStatus?.hasAnyHours && !hoursStatus.isOpenNow;
 
   const [draft, setDraft] = useLocalStorageState<CheckoutDraft>(`checkout:${slug}`, INITIAL_DRAFT);
 
@@ -204,6 +216,18 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
   const [payment, setPayment] = useState<PaymentMethod>(() => draft.payment);
   const [change, setChange] = useState(() => draft.change);
   const [sent, setSent] = useState(false);
+  const [sentSummary, setSentSummary] = useState<{
+    cart: CartEntry[];
+    cartTotal: number;
+    delivery: number;
+    orderTotal: number;
+  } | null>(null);
+
+  const displayCart = sentSummary?.cart ?? cart;
+  const displayCartCount = displayCart.reduce((s, i) => s + i.quantity, 0);
+  const displayCartTotal = sentSummary?.cartTotal ?? cartTotal;
+  const displayDelivery = sentSummary?.delivery ?? delivery;
+  const displayOrderTotal = sentSummary?.orderTotal ?? orderTotal;
 
   useEffect(() => {
     setDraft({
@@ -335,28 +359,50 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
     });
   };
 
+  const [blockedClosed, setBlockedClosed] = useState(false);
+
   const handleSendWhatsApp = () => {
     if (sent) return;
+    const message = buildMessage();
     startSaving(async () => {
+      let result: { ok: boolean; reason?: "closed" | "invalid" } = { ok: true };
       try {
-        await saveCustomerOrderAction({
+        result = await submitOrderAction({
           storeId: settings.id,
           name: identity.name ?? "",
           phone: (identity.phone ?? "").replace(/\D/g, ""),
-          addressId: selectedAddressId ?? undefined,
-          newAddress: selectedAddressId ? undefined : address,
+          address: effectiveAddress,
+          saveNewAddress: selectedAddressId ? undefined : address,
+          items: cart.map((entry) => ({
+            name: entry.name,
+            quantity: entry.quantity,
+            unitPrice: entry.price,
+          })),
+          subtotal: cartTotal,
+          deliveryFee: delivery,
+          total: orderTotal,
+          paymentMethod: payment,
+          paymentNote: payment === "cash" && change.trim() ? change.trim() : undefined,
         });
       } catch {
-        // Salvar cliente/endereço é conveniência para o próximo pedido — não deve
-        // impedir o envio deste pedido pelo WhatsApp.
+        // Falha de rede/infra ao salvar o pedido é conveniência (histórico do cliente) —
+        // não deve impedir o envio pelo WhatsApp. Só o motivo "closed" (loja fechada,
+        // validado no servidor) bloqueia o envio de fato.
       }
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(buildMessage())}`, "_blank");
+
+      if (!result.ok && result.reason === "closed") {
+        setBlockedClosed(true);
+        return;
+      }
+
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
+      setSentSummary({ cart, cartTotal, delivery, orderTotal });
+      clearCart();
       setSent(true);
     });
   };
 
   const handleBackToCatalog = () => {
-    clearCart();
     setDraft(INITIAL_DRAFT);
     resetAddress(EMPTY_ADDRESS);
     router.push(`/${slug}`);
@@ -364,8 +410,26 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
 
   const animClass = directionRef.current === "forward" ? "animate-step-forward" : "animate-step-back";
 
+  // ── Loja fechada ───────────────────────────────────────────────────────────
+  if (!sent && (isClosed || blockedClosed)) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} slug={slug} onBack={() => router.back()} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
+          <span className="text-7xl select-none">🔒</span>
+          <h2 className="font-heading text-3xl font-black">Loja fechada no momento</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Não estamos aceitando pedidos fora do horário de funcionamento. Volte mais tarde
+            para finalizar sua compra.
+          </p>
+          <ActionButton onClick={() => router.push(`/${slug}`)}>Voltar ao catálogo</ActionButton>
+        </div>
+      </div>
+    );
+  }
+
   // ── Empty cart ──────────────────────────────────────────────────────────────
-  if (cart.length === 0) {
+  if (!sent && cart.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} slug={slug} onBack={() => router.back()} />
@@ -851,12 +915,12 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
                   Itens
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {cartCount} {cartCount === 1 ? "item" : "itens"}
+                  {displayCartCount} {displayCartCount === 1 ? "item" : "itens"}
                 </span>
               </div>
               <Separator />
               <div className="divide-y divide-border">
-                {cart.map((entry) => (
+                {displayCart.map((entry) => (
                   <div key={entry.id} className="flex items-center gap-3 px-5 py-3.5">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xl"
@@ -954,15 +1018,15 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-semibold">{fmt(cartTotal)}</span>
+                  <span className="font-semibold">{fmt(displayCartTotal)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Entrega</span>
                   <span
                     className="font-semibold"
-                    style={{ color: delivery === 0 ? "var(--brand-sage)" : "var(--foreground)" }}
+                    style={{ color: displayDelivery === 0 ? "var(--brand-sage)" : "var(--foreground)" }}
                   >
-                    {delivery === 0 ? "Grátis 🎉" : fmt(delivery)}
+                    {displayDelivery === 0 ? "Grátis 🎉" : fmt(displayDelivery)}
                   </span>
                 </div>
               </div>
@@ -973,7 +1037,7 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
                   className="font-heading text-4xl font-black tracking-tight"
                   style={{ color: "var(--brand-amber)" }}
                 >
-                  {fmt(orderTotal)}
+                  {fmt(displayOrderTotal)}
                 </span>
               </div>
             </div>

@@ -11,6 +11,7 @@ import {
   Cookie,
   ArrowRight,
   Sparkles,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,12 +41,14 @@ function CookieCard({
   index,
   onAdd,
   onRemove,
+  disabled,
 }: {
   cookie: CookieItem;
   quantity: number;
   index: number;
   onAdd: () => void;
   onRemove: () => void;
+  disabled?: boolean;
 }) {
   return (
     <article
@@ -90,7 +93,8 @@ function CookieCard({
             <Button
               size="sm"
               onClick={onAdd}
-              className="rounded-full h-9 px-4 gap-1.5 text-sm font-semibold active:scale-95 transition-transform w-full sm:w-auto"
+              disabled={disabled}
+              className="rounded-full h-9 px-4 gap-1.5 text-sm font-semibold active:scale-95 transition-transform w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-3.5 h-3.5" />
               Adicionar
@@ -109,7 +113,8 @@ function CookieCard({
               </span>
               <button
                 onClick={onAdd}
-                className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all cursor-pointer active:scale-90"
+                disabled={disabled}
+                className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all cursor-pointer active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Adicionar um"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -205,6 +210,8 @@ export function Catalog({
 
   const { cart, cartCount, cartTotal, delivery, orderTotal, addToCart, removeFromCart, deleteFromCart, clearCart } = useCart();
 
+  const isClosed = !!hoursStatus?.hasAnyHours && !hoursStatus.isOpenNow;
+
   const categories = useMemo(
     () => ["todos", ...Array.from(new Set(products.map((p) => p.category)))],
     [products]
@@ -261,6 +268,14 @@ export function Catalog({
               className="h-10 pl-10 rounded-full bg-secondary border-0 text-sm focus-visible:ring-primary/40 transition-all"
             />
           </div>
+
+          <a
+            href={`/${slug}/pedidos`}
+            className="hidden sm:flex items-center gap-2 rounded-full border border-border px-4 h-10 hover:bg-secondary hover:border-primary/30 transition-all"
+          >
+            <Receipt className="w-4 h-4 text-foreground" />
+            <span className="font-heading text-sm font-semibold">Meus pedidos</span>
+          </a>
 
           <button
             onClick={() => setCartOpen(true)}
@@ -471,6 +486,7 @@ export function Catalog({
                 index={index}
                 onAdd={() => addToCart(cookie)}
                 onRemove={() => removeFromCart(cookie.id)}
+                disabled={isClosed}
               />
             ))}
           </div>
@@ -563,9 +579,17 @@ export function Catalog({
                   )}
                 </div>
 
+                {isClosed && (
+                  <p className="text-center text-xs font-semibold text-destructive">
+                    A loja está fechada no momento. Volte durante o horário de funcionamento
+                    para finalizar seu pedido.
+                  </p>
+                )}
+
                 <Button
-                  className="w-full h-12 rounded-full font-heading text-base font-bold gap-2 active:scale-[0.98] transition-transform"
+                  className="w-full h-12 rounded-full font-heading text-base font-bold gap-2 active:scale-[0.98] transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => { setCartOpen(false); router.push(`/${slug}/checkout`); }}
+                  disabled={isClosed}
                 >
                   Finalizar pedido
                   <ArrowRight className="w-4 h-4" />

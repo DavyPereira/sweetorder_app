@@ -2,11 +2,21 @@
 
 import {
   findCustomerByPhone,
-  saveCustomerOrder,
+  upsertCustomer,
+  saveCustomerAddress,
   type CustomerLookupResult,
   type NewAddressInput,
 } from "@/lib/customers";
+import {
+  createOrder,
+  findOrdersByPhone,
+  type OrderDTO,
+  type OrderItemSnapshot,
+  type OrderAddressSnapshot,
+} from "@/lib/orders";
 import { customerIdentitySchema } from "@/lib/schemas/customer";
+import { getBusinessHours } from "@/lib/business-hours";
+import { getBusinessHoursStatus } from "@/lib/business-hours-status";
 
 export async function lookupCustomerAction(
   storeId: string,
@@ -33,26 +43,63 @@ function customerPhoneOnly(phone: string): string | null {
   return parsed.success ? parsed.data : null;
 }
 
-export async function saveCustomerOrderAction(params: {
+export async function submitOrderAction(params: {
   storeId: string;
   name: string;
   phone: string;
-  addressId?: string;
-  newAddress?: NewAddressInput;
-}): Promise<{ ok: boolean }> {
+  address: OrderAddressSnapshot;
+  saveNewAddress?: NewAddressInput;
+  items: OrderItemSnapshot[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  paymentMethod: string;
+  paymentNote?: string;
+}): Promise<{ ok: boolean; reason?: "closed" | "invalid" }> {
   const identity = parseIdentity(params.name, params.phone);
-  if (!identity) return { ok: false };
+  if (!identity || params.items.length === 0) return { ok: false, reason: "invalid" };
+
+  const businessHours = await getBusinessHours(params.storeId);
+  const hoursStatus = getBusinessHoursStatus(businessHours);
+  if (hoursStatus.hasAnyHours && !hoursStatus.isOpenNow) {
+    return { ok: false, reason: "closed" };
+  }
 
   try {
-    await saveCustomerOrder({
+    const customerId = await upsertCustomer({
       storeId: params.storeId,
       name: identity.name,
       phone: identity.phone,
-      addressId: params.addressId,
-      newAddress: params.newAddress,
     });
+
+    if (params.saveNewAddress) {
+      await saveCustomerAddress(customerId, params.saveNewAddress);
+    }
+
+    await createOrder({
+      storeId: params.storeId,
+      customerId,
+      items: params.items,
+      address: params.address,
+      subtotal: params.subtotal,
+      deliveryFee: params.deliveryFee,
+      total: params.total,
+      paymentMethod: params.paymentMethod,
+      paymentNote: params.paymentNote,
+    });
+
     return { ok: true };
   } catch {
     return { ok: false };
+  }
+}
+
+export async function lookupOrdersAction(storeId: string, phone: string): Promise<OrderDTO[]> {
+  const parsed = customerPhoneOnly(phone);
+  if (!parsed) return [];
+  try {
+    return await findOrdersByPhone(storeId, parsed);
+  } catch {
+    return [];
   }
 }
