@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ALLOWED_WHATSAPP_PLACEHOLDERS, extractWhatsAppPlaceholders } from "@/lib/whatsapp-template";
+import { STORE_ICON_NAMES } from "@/lib/store-icons";
 
 export const RESERVED_SLUGS = ["admin", "superadmin", "login", "cadastro", "convite", "api", "_next"];
 
@@ -36,6 +37,13 @@ export const storeSettingsSchema = z.object({
   pixKey: z.string().trim(),
   acceptsCash: z.boolean(),
   acceptsCard: z.boolean(),
+  brandColor: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Use uma cor hexadecimal válida, ex: #4f7a5c"),
+  brandIcon: z.enum(STORE_ICON_NAMES as [string, ...string[]], {
+    error: "Escolha um ícone válido",
+  }),
 });
 
 export type StoreSettingsFormData = z.infer<typeof storeSettingsSchema>;

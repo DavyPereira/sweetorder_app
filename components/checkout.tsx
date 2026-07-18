@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useTransition } from "react";
+import { useEffect, useMemo, useState, useRef, useTransition, createElement } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +8,6 @@ import { z } from "zod";
 import {
   ArrowLeft,
   ArrowRight,
-  Cookie,
   MapPin,
   CreditCard,
   Banknote,
@@ -31,6 +30,7 @@ import { renderWhatsAppTemplate } from "@/lib/whatsapp-template";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { formatPhone } from "@/lib/phone";
 import { lookupCustomerAction, submitOrderAction } from "@/app/[slug]/checkout/actions";
+import { getStoreIcon } from "@/lib/store-icons";
 import type { CustomerLookupResult } from "@/lib/customers";
 import type { StoreSettingsDTO, BusinessHourDayDTO } from "@/lib/types";
 import type { CartEntry } from "@/lib/cart-context";
@@ -164,7 +164,7 @@ export function Checkout({
 }) {
   const router = useRouter();
   const { cart, cartCount, cartTotal, delivery, orderTotal, clearCart } = useCart();
-  const { storeName, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee } = settings;
+  const { storeName, brandIcon, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee } = settings;
 
   const [hoursStatus, setHoursStatus] = useState<BusinessHoursStatus | null>(null);
   useEffect(() => {
@@ -414,7 +414,7 @@ export function Checkout({
   if (!sent && (isClosed || blockedClosed)) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} slug={slug} onBack={() => router.back()} />
+        <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} brandIcon={brandIcon} slug={slug} onBack={() => router.back()} />
         <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
           <span className="text-7xl select-none">🔒</span>
           <h2 className="font-heading text-3xl font-black">Loja fechada no momento</h2>
@@ -422,7 +422,7 @@ export function Checkout({
             Não estamos aceitando pedidos fora do horário de funcionamento. Volte mais tarde
             para finalizar sua compra.
           </p>
-          <ActionButton onClick={() => router.push(`/${slug}`)}>Voltar ao catálogo</ActionButton>
+          <ActionButton color="var(--primary)" onClick={() => router.push(`/${slug}`)}>Voltar ao catálogo</ActionButton>
         </div>
       </div>
     );
@@ -432,12 +432,12 @@ export function Checkout({
   if (!sent && cart.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} slug={slug} onBack={() => router.back()} />
+        <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} brandIcon={brandIcon} slug={slug} onBack={() => router.back()} />
         <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
           <span className="text-7xl select-none">🍪</span>
           <h2 className="font-heading text-3xl font-black">Carrinho vazio</h2>
           <p className="text-muted-foreground">Adicione cookies antes de finalizar.</p>
-          <ActionButton onClick={() => router.push(`/${slug}`)}>Ver catálogo</ActionButton>
+          <ActionButton color="var(--primary)" onClick={() => router.push(`/${slug}`)}>Ver catálogo</ActionButton>
         </div>
       </div>
     );
@@ -449,6 +449,7 @@ export function Checkout({
         step={step}
         totalSteps={TOTAL_STEPS}
         storeName={storeName}
+        brandIcon={brandIcon}
         slug={slug}
         onBack={step > 1 ? () => goTo(step - 1) : () => router.back()}
       />
@@ -458,7 +459,7 @@ export function Checkout({
         <div className="h-2 rounded-full bg-border w-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(step / TOTAL_STEPS) * 100}%`, backgroundColor: "var(--brand-sage)" }}
+            style={{ width: `${(step / TOTAL_STEPS) * 100}%`, backgroundColor: "var(--primary)" }}
           />
         </div>
       </div>
@@ -505,7 +506,7 @@ export function Checkout({
             </div>
 
             <div className="mt-8">
-              <ActionButton onClick={onIdentityContinue} disabled={isLookingUp}>
+              <ActionButton color="var(--primary)" onClick={onIdentityContinue} disabled={isLookingUp}>
                 {isLookingUp ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -538,12 +539,12 @@ export function Checkout({
             {/* Delivery fee card */}
             <div
               className="mt-6 rounded-3xl p-5"
-              style={{ backgroundColor: "color-mix(in oklch, var(--brand-sage) 12%, var(--card))" }}
+              style={{ backgroundColor: "color-mix(in oklch, var(--primary) 12%, var(--card))" }}
             >
               <div className="flex items-center gap-2.5 mb-1.5">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "var(--brand-sage)" }}
+                  style={{ backgroundColor: "var(--primary)" }}
                 >
                   <Truck className="w-4 h-4 text-white" />
                 </div>
@@ -554,7 +555,7 @@ export function Checkout({
                 Abaixo disso, <strong className="text-foreground">{fmt(deliveryFee)}</strong>.
               </p>
               {cartTotal >= freeDeliveryThreshold ? (
-                <p className="mt-2 text-sm font-bold" style={{ color: "var(--brand-sage)" }}>
+                <p className="mt-2 text-sm font-bold" style={{ color: "var(--primary)" }}>
                   ✓ Seu pedido já tem entrega grátis!
                 </p>
               ) : (
@@ -576,7 +577,7 @@ export function Checkout({
                         className="relative w-full p-4 rounded-2xl border-2 flex items-start gap-3 text-left transition-all duration-200 cursor-pointer active:scale-[0.98]"
                         style={
                           selected
-                            ? { backgroundColor: "var(--brand-sage)", borderColor: "var(--brand-sage)" }
+                            ? { backgroundColor: "var(--primary)", borderColor: "var(--primary)" }
                             : { borderColor: "var(--border)", backgroundColor: "var(--card)" }
                         }
                       >
@@ -613,7 +614,7 @@ export function Checkout({
                           }
                         >
                           {selected && (
-                            <Check className="w-3 h-3 stroke-[3]" style={{ color: "var(--brand-sage)" }} />
+                            <Check className="w-3 h-3 stroke-[3]" style={{ color: "var(--primary)" }} />
                           )}
                         </div>
                       </button>
@@ -638,7 +639,7 @@ export function Checkout({
                 </div>
 
                 <div className="mt-8">
-                  <ActionButton onClick={onSavedAddressContinue} disabled={!selectedAddressId}>
+                  <ActionButton color="var(--primary)" onClick={onSavedAddressContinue} disabled={!selectedAddressId}>
                     Continuar <ArrowRight className="w-4 h-4" />
                   </ActionButton>
                   {!selectedAddressId && (
@@ -761,7 +762,7 @@ export function Checkout({
                 </div>
 
                 <div className="mt-8">
-                  <ActionButton onClick={onAddressContinue}>
+                  <ActionButton color="var(--primary)" onClick={onAddressContinue}>
                     Continuar <ArrowRight className="w-4 h-4" />
                   </ActionButton>
                   {addressAttempted && Object.keys(addressErrors).length > 0 && (
@@ -793,7 +794,7 @@ export function Checkout({
                     className="relative w-full p-5 rounded-2xl border-2 flex items-center gap-5 md:flex-col md:items-start md:gap-4 text-left transition-all duration-200 cursor-pointer active:scale-[0.98]"
                     style={
                       selected
-                        ? { backgroundColor: "var(--brand-sage)", borderColor: "var(--brand-sage)" }
+                        ? { backgroundColor: "var(--primary)", borderColor: "var(--primary)" }
                         : { borderColor: "var(--border)", backgroundColor: "var(--card)" }
                     }
                   >
@@ -832,7 +833,7 @@ export function Checkout({
                       }
                     >
                       {selected && (
-                        <Check className="w-3.5 h-3.5 stroke-[3]" style={{ color: "var(--brand-sage)" }} />
+                        <Check className="w-3.5 h-3.5 stroke-[3]" style={{ color: "var(--primary)" }} />
                       )}
                     </div>
                   </button>
@@ -855,11 +856,11 @@ export function Checkout({
             {payment === "pix" && (
               <div
                 className="mt-6 rounded-3xl p-5 flex gap-3"
-                style={{ backgroundColor: "color-mix(in oklch, var(--brand-amber) 12%, var(--card))" }}
+                style={{ backgroundColor: "color-mix(in oklch, var(--primary) 12%, var(--card))" }}
               >
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "var(--brand-amber)" }}
+                  style={{ backgroundColor: "var(--primary)" }}
                 >
                   <QrCode className="w-4 h-4 text-white" />
                 </div>
@@ -873,7 +874,7 @@ export function Checkout({
             )}
 
             <div className="mt-8">
-              <ActionButton onClick={() => goTo(4)}>
+              <ActionButton color="var(--primary)" onClick={() => goTo(4)}>
                 Continuar <ArrowRight className="w-4 h-4" />
               </ActionButton>
             </div>
@@ -891,11 +892,11 @@ export function Checkout({
             {/* Warning */}
             <div
               className="mt-6 rounded-3xl p-5 flex gap-3"
-              style={{ backgroundColor: "color-mix(in oklch, var(--brand-amber) 12%, var(--card))" }}
+              style={{ backgroundColor: "color-mix(in oklch, var(--primary) 12%, var(--card))" }}
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ backgroundColor: "var(--brand-amber)" }}
+                style={{ backgroundColor: "var(--primary)" }}
               >
                 <AlertTriangle className="w-4 h-4 text-white" />
               </div>
@@ -945,7 +946,7 @@ export function Checkout({
               <div className="bg-card border-2 border-border rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
+                    <User className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
                     <span className="font-heading font-bold text-xs">Cliente</span>
                   </div>
                   <button
@@ -966,7 +967,7 @@ export function Checkout({
               <div className="bg-card border-2 border-border rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" style={{ color: "var(--brand-amber)" }} />
+                    <MapPin className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
                     <span className="font-heading font-bold text-xs">Endereço</span>
                   </div>
                   <button
@@ -990,7 +991,7 @@ export function Checkout({
               <div className="col-span-2 bg-card border-2 border-border rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <CreditCard className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
+                    <CreditCard className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
                     <span className="font-heading font-bold text-xs">Pagamento</span>
                   </div>
                   <button
@@ -1024,7 +1025,7 @@ export function Checkout({
                   <span className="text-muted-foreground">Entrega</span>
                   <span
                     className="font-semibold"
-                    style={{ color: displayDelivery === 0 ? "var(--brand-sage)" : "var(--foreground)" }}
+                    style={{ color: displayDelivery === 0 ? "var(--primary)" : "var(--foreground)" }}
                   >
                     {displayDelivery === 0 ? "Grátis 🎉" : fmt(displayDelivery)}
                   </span>
@@ -1035,7 +1036,7 @@ export function Checkout({
                 <span className="text-sm text-muted-foreground font-medium">Total</span>
                 <span
                   className="font-heading text-4xl font-black tracking-tight"
-                  style={{ color: "var(--brand-amber)" }}
+                  style={{ color: "var(--primary)" }}
                 >
                   {fmt(displayOrderTotal)}
                 </span>
@@ -1093,15 +1094,21 @@ function CheckoutHeader({
   step,
   totalSteps,
   storeName,
+  brandIcon,
   slug,
   onBack,
 }: {
   step: number;
   totalSteps: number;
   storeName: string;
+  brandIcon?: string;
   slug: string;
   onBack: () => void;
 }) {
+  const storeIcon = useMemo(
+    () => createElement(getStoreIcon(brandIcon), { className: "w-5 h-5", style: { color: "var(--primary)" } }),
+    [brandIcon]
+  );
   return (
     <header className="sticky top-0 z-40 bg-background border-b border-border">
       <div className="max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
@@ -1113,8 +1120,8 @@ function CheckoutHeader({
         </button>
 
         <a href={`/${slug}`} className="flex items-center gap-2" aria-label={storeName}>
-          <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
-          <span className="font-heading text-lg font-bold tracking-tight" style={{ color: "var(--brand-sage)" }}>
+          {storeIcon}
+          <span className="font-heading text-lg font-bold tracking-tight" style={{ color: "var(--primary)" }}>
             {storeName}
           </span>
         </a>

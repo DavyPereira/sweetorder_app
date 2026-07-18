@@ -14,5 +14,12 @@ export default async function OrdersPage({ params }: { params: Promise<{ slug: s
   const settings = await getStoreBySlug(slug);
   if (!settings) notFound();
 
-  return <CustomerOrders storeId={settings.id} storeName={settings.storeName} slug={slug} />;
+  return (
+    <CustomerOrders
+      storeId={settings.id}
+      storeName={settings.storeName}
+      brandIcon={settings.brandIcon}
+      slug={slug}
+    />
+  );
 }

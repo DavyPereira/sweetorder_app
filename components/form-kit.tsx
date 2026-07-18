@@ -25,11 +25,13 @@ export function ActionButton({
   onClick,
   type = "button",
   disabled,
+  color = "var(--brand-sage)",
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
   disabled?: boolean;
+  color?: string;
 }) {
   return (
     <button
@@ -37,7 +39,7 @@ export function ActionButton({
       onClick={onClick}
       disabled={disabled}
       className="w-full h-14 rounded-2xl font-heading text-base font-black flex items-center justify-center gap-2 text-white transition-all duration-200 cursor-pointer active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
-      style={{ backgroundColor: "var(--brand-sage)" }}
+      style={{ backgroundColor: color }}
     >
       {children}
     </button>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActionButton } from "@/components/form-kit";
 import { GeneralFields } from "@/components/admin/settings/general-fields";
@@ -48,17 +49,25 @@ export function StoreSettingsForm({
 
   return (
     <div>
-      <h1 className="font-heading text-3xl font-black tracking-tight">Configurações da loja</h1>
-      <p className="mt-1.5 text-muted-foreground">
+      <Link
+        href="/admin"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Painel
+      </Link>
+
+      <h1 className="mt-4 font-heading text-3xl font-black tracking-tight md:text-4xl">Configurações da loja</h1>
+      <p className="mt-1.5 text-muted-foreground md:text-base">
         Personalize sua loja: identidade, contato, horários, entrega e pagamento.
       </p>
 
-      <Tabs defaultValue="geral" className="mt-6 max-w-3xl">
+      <Tabs defaultValue="geral" className="mt-6 max-w-4xl">
         <TabsList>
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="contato">Contato</TabsTrigger>
           <TabsTrigger value="horarios">Horários</TabsTrigger>
-          <TabsTrigger value="entrega">Entrega & Pagamento</TabsTrigger>
+          <TabsTrigger value="entrega">Entrega</TabsTrigger>
         </TabsList>
 
         <FormProvider {...methods}>

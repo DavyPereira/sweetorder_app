@@ -21,6 +21,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
       storeName={settings.storeName}
       freeDeliveryThreshold={settings.freeDeliveryThreshold}
       businessHours={businessHours}
+      brandIcon={settings.brandIcon}
     />
   );
 }

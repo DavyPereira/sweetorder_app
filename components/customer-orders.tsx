@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { ArrowLeft, Cookie, Loader2, MapPin, Receipt, Search } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition, createElement } from "react";
+import { ArrowLeft, Loader2, MapPin, Receipt, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatPhone } from "@/lib/phone";
 import { lookupOrdersAction } from "@/app/[slug]/checkout/actions";
+import { getStoreIcon } from "@/lib/store-icons";
 import type { OrderDTO } from "@/lib/orders";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -28,12 +29,18 @@ function formatDate(iso: string) {
 export function CustomerOrders({
   storeId,
   storeName,
+  brandIcon,
   slug,
 }: {
   storeId: string;
   storeName: string;
+  brandIcon?: string;
   slug: string;
 }) {
+  const storeIcon = useMemo(
+    () => createElement(getStoreIcon(brandIcon), { className: "w-5 h-5", style: { color: "var(--primary)" } }),
+    [brandIcon]
+  );
   const [phone, setPhone] = useState("");
   const [orders, setOrders] = useState<OrderDTO[] | null>(null);
   const [searched, setSearched] = useState(false);
@@ -71,8 +78,8 @@ export function CustomerOrders({
             <ArrowLeft className="w-4 h-4" />
           </a>
           <div className="flex items-center gap-2">
-            <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
-            <span className="font-heading text-lg font-bold tracking-tight" style={{ color: "var(--brand-sage)" }}>
+            {storeIcon}
+            <span className="font-heading text-lg font-bold tracking-tight" style={{ color: "var(--primary)" }}>
               {storeName}
             </span>
           </div>
@@ -124,7 +131,7 @@ export function CustomerOrders({
                     </span>
                     <span
                       className="font-heading text-lg font-black"
-                      style={{ color: "var(--brand-amber)" }}
+                      style={{ color: "var(--primary)" }}
                     >
                       {fmt(order.total)}
                     </span>

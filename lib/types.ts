@@ -17,6 +17,7 @@ export type StoreListItemDTO = {
   slug: string;
   storeName: string;
   storeDescription: string;
+  brandColor: string;
 };
 
 export type StoreSettingsDTO = {
@@ -34,6 +35,8 @@ export type StoreSettingsDTO = {
   pixKey: string;
   acceptsCash: boolean;
   acceptsCard: boolean;
+  brandColor: string;
+  brandIcon: string;
 };
 
 export type BusinessHourShiftDTO = {

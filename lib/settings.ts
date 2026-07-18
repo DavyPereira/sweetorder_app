@@ -17,6 +17,8 @@ function mapStoreRow(row: {
   pix_key: string;
   accepts_cash: boolean;
   accepts_card: boolean;
+  brand_color: string;
+  brand_icon: string;
 }): StoreSettingsDTO {
   return {
     id: row.id,
@@ -33,6 +35,8 @@ function mapStoreRow(row: {
     pixKey: row.pix_key,
     acceptsCash: row.accepts_cash,
     acceptsCard: row.accepts_card,
+    brandColor: row.brand_color,
+    brandIcon: row.brand_icon,
   };
 }
 
@@ -67,7 +71,7 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("stores")
-    .select("id, slug, store_name, store_description")
+    .select("id, slug, store_name, store_description, brand_color")
     .order("store_name", { ascending: true });
 
   if (error) throw error;
@@ -77,5 +81,6 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
     slug: row.slug,
     storeName: row.store_name,
     storeDescription: row.store_description,
+    brandColor: row.brand_color,
   }));
 }

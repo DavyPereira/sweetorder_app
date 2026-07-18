@@ -23,5 +23,16 @@ export default async function StoreLayout({
   const settings = await getStoreBySlug(slug);
   if (!settings) notFound();
 
-  return <CartProvider settings={settings}>{children}</CartProvider>;
+  return (
+    <div
+      style={
+        {
+          "--primary": settings.brandColor,
+          "--ring": settings.brandColor,
+        } as React.CSSProperties
+      }
+    >
+      <CartProvider settings={settings}>{children}</CartProvider>
+    </div>
+  );
 }

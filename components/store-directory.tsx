@@ -3,53 +3,33 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Cookie, Search, Store as StoreIcon, ArrowRight, Rocket, Smartphone, Wallet } from "lucide-react";
+import { LayoutGrid, Search, Store as StoreIcon, ArrowRight, Rocket, Smartphone, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { StoreListItemDTO } from "@/lib/types";
 
-const THEME = {
-  base: "#08160e",
-  mid: "#102a1b",
-  glow: "#1f4c2f",
-  accent: "#8fd39f",
-  panel: "rgba(255,255,255,0.05)",
-  panelBorder: "rgba(255,255,255,0.10)",
-  textMuted: "rgba(235,242,237,0.68)",
-};
-
-const CARD_PALETTE = [
-  "color-mix(in oklch, var(--brand-sage) 16%, var(--card))",
-  "color-mix(in oklch, var(--brand-amber) 14%, var(--card))",
-  "color-mix(in oklch, var(--brand-sage) 9%, var(--card))",
-  "color-mix(in oklch, var(--brand-amber) 8%, var(--card))",
-];
-
-function pickFromSlug<T>(slug: string, palette: T[]): T {
-  const hash = Array.from(slug).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  return palette[hash % palette.length];
-}
-
 function StoreCard({ store, index }: { store: StoreListItemDTO; index: number }) {
-  const bg = pickFromSlug(store.slug, CARD_PALETTE);
+  const color = store.brandColor || "var(--brand-sage)";
   const initial = store.storeName.trim().charAt(0).toUpperCase() || "?";
   const [logoFailed, setLogoFailed] = useState(false);
 
   return (
     <Link
       href={`/${store.slug}`}
-      className="group flex flex-col rounded-xl overflow-hidden border border-border bg-card hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
+      className="group flex flex-col rounded-2xl overflow-hidden border border-border bg-card hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
       style={{
-        animation: `card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.05}s both`,
+        animation: `card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.06}s both`,
       }}
     >
+      <div className="h-1.5 w-full shrink-0" style={{ backgroundColor: color }} />
+
       <div
         className="relative aspect-[16/9] flex items-center justify-center overflow-hidden"
-        style={{ backgroundColor: logoFailed ? bg : "#ffffff" }}
+        style={{ backgroundColor: logoFailed ? `color-mix(in oklch, ${color} 14%, var(--card))` : "#ffffff" }}
       >
         {logoFailed ? (
           <span
-            className="font-heading text-4xl font-bold select-none text-foreground/70"
-            style={{ letterSpacing: "-0.02em" }}
+            className="font-heading text-4xl font-bold select-none"
+            style={{ letterSpacing: "-0.02em", color }}
           >
             {initial}
           </span>
@@ -79,7 +59,7 @@ function StoreCard({ store, index }: { store: StoreListItemDTO; index: number })
           <span className="text-xs text-muted-foreground truncate">/{store.slug}</span>
           <span
             className="flex items-center gap-1.5 text-sm font-semibold shrink-0"
-            style={{ color: "var(--brand-sage)" }}
+            style={{ color }}
           >
             Ver loja
             <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
@@ -103,107 +83,77 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
   }, [stores, search]);
 
   return (
-    <div
-      className="min-h-screen flex flex-col relative overflow-hidden"
-      style={{
-        backgroundColor: THEME.base,
-        backgroundImage: `
-          radial-gradient(ellipse 90% 55% at 50% -8%, ${THEME.glow} 0%, transparent 62%),
-          linear-gradient(180deg, ${THEME.mid} 0%, ${THEME.base} 40%, ${THEME.base} 100%)
-        `,
-      }}
-    >
-      <header
-        className="sticky top-0 z-40 backdrop-blur-md"
-        style={{ borderBottom: `1px solid ${THEME.panelBorder}`, backgroundColor: "rgba(8,22,14,0.75)" }}
-      >
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle 700px at 0% 280px, rgba(0, 0, 0, 0.035), transparent),
+            radial-gradient(circle 700px at 100% 280px, rgba(0, 0, 0, 0.025), transparent)
+          `,
+        }}
+      />
+
+      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
           <span className="flex items-center gap-2 shrink-0">
-            <Cookie className="w-5 h-5" style={{ color: THEME.accent }} />
-            <span className="font-heading text-xl font-bold tracking-tight text-white">
+            <LayoutGrid className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
+            <span
+              className="font-heading text-xl font-bold tracking-tight"
+              style={{ color: "var(--brand-sage)" }}
+            >
               SweetOrder
             </span>
           </span>
 
-          <div className="flex-1 max-w-lg mx-auto relative hidden sm:block">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+          <div className="flex-1 max-w-md ml-auto relative hidden sm:block">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Buscar lojas..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-10 pl-10 rounded-full border-0 text-sm text-white placeholder:text-white/50 focus-visible:ring-white/25 transition-all"
-              style={{ backgroundColor: THEME.panel }}
+              className="h-10 pl-10 rounded-full text-sm"
             />
           </div>
         </div>
 
         <div className="sm:hidden px-4 pb-3 relative">
-          <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+          <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Buscar lojas..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 pl-10 rounded-full border-0 text-sm text-white placeholder:text-white/50 focus-visible:ring-white/25 transition-all"
-            style={{ backgroundColor: THEME.panel }}
+            className="h-10 pl-10 rounded-full text-sm"
           />
         </div>
       </header>
 
-      <section className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 pt-16 pb-12 overflow-hidden">
-        <span
-          className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-medium animate-slide-up"
-          style={{
-            border: `1px solid ${THEME.panelBorder}`,
-            backgroundColor: THEME.panel,
-            color: THEME.textMuted,
-            animationDelay: "0s",
-          }}
-        >
-          <StoreIcon className="w-3.5 h-3.5" style={{ color: THEME.accent }} />
-          Diretório de lojas
-        </span>
-
-        <h1
-          className="mt-5 font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-white animate-slide-up"
-          style={{ animationDelay: "0.06s" }}
-        >
-          Encontre lojas artesanais
-          <br />
-          <span style={{ color: THEME.accent }}>perto de você.</span>
+      <section className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 pt-12 pb-8">
+        <h1 className="font-heading text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+          Encontre uma loja
         </h1>
-
-        <p
-          className="mt-5 text-base sm:text-lg max-w-md leading-relaxed animate-slide-up"
-          style={{ color: THEME.textMuted, animationDelay: "0.18s" }}
-        >
-          Cada loja tem seu próprio catálogo e entrega direto para você.
+        <p className="mt-1.5 text-muted-foreground max-w-md">
+          Cada loja aqui tem seu próprio catálogo e faz a entrega direto para você.
         </p>
 
-        <div
-          className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm animate-slide-up"
-          style={{ color: THEME.textMuted, animationDelay: "0.28s" }}
-        >
-          <span className="flex items-center gap-1.5">
-            <StoreIcon className="w-3.5 h-3.5" style={{ color: THEME.accent }} />
-            <span className="font-heading font-semibold text-white">{stores.length}</span>{" "}
-            {stores.length === 1 ? "loja cadastrada" : "lojas cadastradas"}
-          </span>
+        <div className="mt-5 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <StoreIcon className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
+          <span className="font-heading font-semibold text-foreground">{stores.length}</span>
+          {stores.length === 1 ? " loja cadastrada" : " lojas cadastradas"}
         </div>
       </section>
 
       <main className="relative flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-            <span
-              className="flex items-center justify-center w-14 h-14 rounded-full"
-              style={{ backgroundColor: THEME.panel }}
-            >
-              <Search className="w-6 h-6" style={{ color: THEME.textMuted }} />
+            <span className="flex items-center justify-center w-14 h-14 rounded-full bg-secondary">
+              <Search className="w-6 h-6 text-muted-foreground" />
             </span>
-            <h2 className="font-heading text-2xl font-bold text-white">
+            <h2 className="font-heading text-2xl font-bold text-foreground">
               {stores.length === 0 ? "Nenhuma loja por aqui ainda" : "Nenhuma loja encontrada"}
             </h2>
-            <p style={{ color: THEME.textMuted }}>
+            <p className="text-muted-foreground">
               {stores.length === 0
                 ? "Assim que uma loja for cadastrada, ela aparece por aqui."
                 : "Tente buscar por outro nome."}
@@ -218,54 +168,45 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
         )}
       </main>
 
-      <section className="relative" style={{ borderTop: `1px solid ${THEME.panelBorder}`, backgroundColor: "rgba(255,255,255,0.03)" }}>
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-16">
+      <section className="relative border-t border-border bg-secondary/40">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-14">
           <div className="flex flex-col items-center text-center max-w-xl mx-auto">
             <span
               className="flex items-center justify-center w-12 h-12 rounded-xl mb-4"
-              style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.panelBorder}` }}
+              style={{ backgroundColor: "var(--secondary)" }}
             >
-              <StoreIcon className="w-5 h-5" style={{ color: THEME.accent }} />
+              <StoreIcon className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
             </span>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-white">
+            <h2 className="font-heading text-2xl sm:text-3xl font-black tracking-tight text-foreground">
               Tem uma loja artesanal?
             </h2>
-            <p className="mt-3 leading-relaxed" style={{ color: THEME.textMuted }}>
+            <p className="mt-3 text-muted-foreground leading-relaxed">
               Crie seu catálogo, receba pedidos pelo WhatsApp e comece a
               vender online em poucos minutos.
             </p>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div
-              className="flex flex-col items-center text-center gap-2 p-5 rounded-xl"
-              style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.panelBorder}` }}
-            >
-              <Rocket className="w-5 h-5" style={{ color: THEME.accent }} />
-              <h3 className="font-heading font-bold text-white">Comece rápido</h3>
-              <p className="text-sm leading-relaxed" style={{ color: THEME.textMuted }}>
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex flex-col items-center text-center gap-2 p-5 rounded-2xl border border-border bg-card">
+              <Rocket className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
+              <h3 className="font-heading font-bold text-foreground">Comece rápido</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Monte seu catálogo e publique sua loja em minutos, sem
                 precisar de site próprio.
               </p>
             </div>
-            <div
-              className="flex flex-col items-center text-center gap-2 p-5 rounded-xl"
-              style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.panelBorder}` }}
-            >
-              <Smartphone className="w-5 h-5" style={{ color: THEME.accent }} />
-              <h3 className="font-heading font-bold text-white">Pedidos pelo WhatsApp</h3>
-              <p className="text-sm leading-relaxed" style={{ color: THEME.textMuted }}>
+            <div className="flex flex-col items-center text-center gap-2 p-5 rounded-2xl border border-border bg-card">
+              <Smartphone className="w-5 h-5" style={{ color: "var(--brand-amber)" }} />
+              <h3 className="font-heading font-bold text-foreground">Pedidos pelo WhatsApp</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Cada pedido chega direto no seu WhatsApp, sem app novo pra
                 aprender.
               </p>
             </div>
-            <div
-              className="flex flex-col items-center text-center gap-2 p-5 rounded-xl"
-              style={{ backgroundColor: THEME.panel, border: `1px solid ${THEME.panelBorder}` }}
-            >
-              <Wallet className="w-5 h-5" style={{ color: THEME.accent }} />
-              <h3 className="font-heading font-bold text-white">Você no controle</h3>
-              <p className="text-sm leading-relaxed" style={{ color: THEME.textMuted }}>
+            <div className="flex flex-col items-center text-center gap-2 p-5 rounded-2xl border border-border bg-card">
+              <Wallet className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
+              <h3 className="font-heading font-bold text-foreground">Você no controle</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Defina preços, entrega e formas de pagamento do seu jeito.
               </p>
             </div>
@@ -273,14 +214,11 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
         </div>
       </section>
 
-      <footer className="relative" style={{ borderTop: `1px solid ${THEME.panelBorder}` }}>
-        <div
-          className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm"
-          style={{ color: THEME.textMuted }}
-        >
+      <footer className="relative border-t border-border">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-2">
-            <Cookie className="w-4 h-4" style={{ color: THEME.accent }} />
-            <span className="font-heading font-semibold text-white">SweetOrder</span>
+            <LayoutGrid className="w-4 h-4" style={{ color: "var(--brand-sage)" }} />
+            <span className="font-heading font-semibold text-foreground">SweetOrder</span>
           </span>
           <span>© {new Date().getFullYear()} SweetOrder. Todos os direitos reservados.</span>
         </div>

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Cookie, LogOut, Package, Store } from "lucide-react";
+import { Cookie, LogOut } from "lucide-react";
 import { getAuthUser, getCurrentAdmin } from "@/lib/session-helpers";
 import { logoutAction } from "@/app/login/actions";
 
@@ -28,23 +28,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               Painel
             </span>
           </Link>
-
-          <nav className="flex items-center gap-1">
-            <Link
-              href="/admin/produtos"
-              className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">Produtos</span>
-            </Link>
-            <Link
-              href="/admin/loja"
-              className="flex items-center gap-1.5 px-3.5 h-9 rounded-full text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              <Store className="w-4 h-4" />
-              <span className="hidden sm:inline">Loja</span>
-            </Link>
-          </nav>
 
           <div className="flex items-center gap-3 shrink-0">
             <span className="hidden md:inline text-sm text-muted-foreground">

@@ -31,6 +31,8 @@ export async function updateStoreSettings(data: SettingsInput): Promise<Settings
       pix_key: parsed.data.pixKey,
       accepts_cash: parsed.data.acceptsCash,
       accepts_card: parsed.data.acceptsCard,
+      brand_color: parsed.data.brandColor,
+      brand_icon: parsed.data.brandIcon,
     })
     .eq("id", admin.storeId);
   if (error) return { error: "Erro ao salvar configurações" };

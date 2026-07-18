@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
+  ArrowLeft,
   Loader2,
   MoreVertical,
   Pencil,
@@ -143,7 +145,15 @@ export function ProductsAdmin({ initialProducts }: { initialProducts: ProductAdm
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <Link
+        href="/admin"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Painel
+      </Link>
+
+      <div className="mt-4 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-heading text-3xl font-black tracking-tight">Produtos</h1>
           <p className="mt-1.5 text-muted-foreground">

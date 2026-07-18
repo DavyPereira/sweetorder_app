@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, createElement } from "react";
 import { useRouter } from "next/navigation";
 import {
   ShoppingCart,
@@ -8,7 +8,6 @@ import {
   Plus,
   Minus,
   X,
-  Cookie,
   ArrowRight,
   Sparkles,
   Receipt,
@@ -27,9 +26,9 @@ import {
 import { useCart, type CookieItem, type CartEntry } from "@/lib/cart-context";
 import {
   getBusinessHoursStatus,
-  formatShiftsList,
   type BusinessHoursStatus,
 } from "@/lib/business-hours-status";
+import { getStoreIcon } from "@/lib/store-icons";
 import type { BusinessHourDayDTO } from "@/lib/types";
 
 const fmt = (v: number) =>
@@ -188,18 +187,28 @@ export function Catalog({
   storeName,
   freeDeliveryThreshold,
   businessHours,
+  brandIcon,
 }: {
   slug: string;
   products: CookieItem[];
   storeName: string;
   freeDeliveryThreshold: number;
   businessHours: BusinessHourDayDTO[];
+  brandIcon?: string;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
   const [cartOpen, setCartOpen] = useState(false);
   const [hoursStatus, setHoursStatus] = useState<BusinessHoursStatus | null>(null);
   const router = useRouter();
+  const storeIcon = useMemo(
+    () =>
+      createElement(getStoreIcon(brandIcon), {
+        className: "w-5 h-5 transition-transform duration-500 hover:rotate-12",
+        style: { color: "var(--primary)" },
+      }),
+    [brandIcon]
+  );
 
   useEffect(() => {
     // Calculado no client (hora local do visitante convertida pro fuso da loja) de propósito,
@@ -247,13 +256,10 @@ export function Catalog({
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
           <a href={`/${slug}`} className="flex items-center gap-2 shrink-0" aria-label={storeName}>
-            <Cookie
-              className="w-5 h-5 transition-transform duration-500 hover:rotate-12"
-              style={{ color: "var(--brand-sage)" }}
-            />
+            {storeIcon}
             <span
               className="font-heading text-xl font-bold tracking-tight"
-              style={{ color: "var(--brand-sage)" }}
+              style={{ color: "var(--primary)" }}
             >
               {storeName}
             </span>
@@ -262,7 +268,7 @@ export function Catalog({
           <div className="flex-1 max-w-lg mx-auto relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Buscar cookies..."
+              placeholder="Buscar produtos..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-10 pl-10 rounded-full bg-secondary border-0 text-sm focus-visible:ring-primary/40 transition-all"
@@ -299,7 +305,7 @@ export function Catalog({
       <button
         onClick={() => setCartOpen(true)}
         className="sm:hidden fixed bottom-5 right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full shadow-lg cursor-pointer active:scale-95 transition-transform"
-        style={{ backgroundColor: "var(--brand-sage)" }}
+        style={{ backgroundColor: "var(--primary)" }}
         aria-label={`Carrinho com ${cartCount} itens`}
       >
         <ShoppingCart className="w-6 h-6 text-white" />
@@ -310,7 +316,7 @@ export function Catalog({
         )}
       </button>
 
-      <section className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 pt-14 pb-10 overflow-hidden">
+      <section className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 pt-8 pb-6 overflow-hidden">
 
         {/* Pattern: diagonal-cross-grid-top */}
         <div
@@ -329,78 +335,46 @@ export function Catalog({
           }}
         />
 
-        {/* Floating cookie decorations */}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute right-[15%] top-4 text-5xl opacity-100 animate-float-cookie select-none"
-          style={{ animationDelay: "0s" }}
-        >
-          🍪
-        </span>
-        <span
-          aria-hidden
-          className="pointer-events-none absolute right-[6%] top-16 text-3xl opacity-100 animate-float-cookie select-none"
-          style={{ animationDelay: "1.2s" }}
-        >
-          🍫
-        </span>
-
         <h1
-          className="font-heading text-5xl sm:text-6xl lg:text-7xl font-black leading-none tracking-tight text-foreground animate-slide-up"
+          className="font-heading text-3xl sm:text-4xl lg:text-5xl font-black leading-none tracking-tight text-foreground animate-slide-up"
           style={{ animationDelay: "0s" }}
         >
-          Nossos
-          <br />
-          <span style={{ color: "var(--brand-amber)" }}>Cookies.</span>
+          Nosso <span style={{ color: "var(--primary)" }}>catálogo.</span>
         </h1>
 
         <p
-          className="mt-5 text-base sm:text-lg text-muted-foreground max-w-sm leading-relaxed animate-slide-up"
-          style={{ animationDelay: "0.12s" }}
+          className="mt-3 text-sm sm:text-base text-muted-foreground max-w-md leading-relaxed animate-slide-up"
+          style={{ animationDelay: "0.1s" }}
         >
-          Feitos à mão, assados na hora e entregues direto pra você.
+          Escolha os produtos e receba certinho no seu endereço.
         </p>
 
-        {hoursStatus?.hasAnyHours && (
-          <div
-            className="mt-4 flex items-center gap-1.5 text-sm animate-slide-up"
-            style={{ animationDelay: "0.17s" }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{
-                backgroundColor: hoursStatus.isOpenNow ? "var(--brand-sage)" : "var(--muted-foreground)",
-              }}
-            />
-            <span
-              className="font-semibold"
-              style={{ color: hoursStatus.isOpenNow ? "var(--brand-sage)" : "var(--muted-foreground)" }}
-            >
-              {hoursStatus.isOpenNow ? "Aberto agora" : "Fechado agora"}
-            </span>
-            {hoursStatus.todayShifts.length > 0 && (
-              <span className="text-muted-foreground">
-                · hoje {formatShiftsList(hoursStatus.todayShifts)}
-              </span>
-            )}
-          </div>
-        )}
-
         <div
-          className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground animate-slide-up"
-          style={{ animationDelay: "0.22s" }}
+          className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground animate-slide-up"
+          style={{ animationDelay: "0.16s" }}
         >
+          {hoursStatus?.hasAnyHours && (
+            <span className="flex items-center gap-1.5">
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{
+                  backgroundColor: hoursStatus.isOpenNow ? "var(--primary)" : "var(--muted-foreground)",
+                }}
+              />
+              <span
+                className="font-semibold"
+                style={{ color: hoursStatus.isOpenNow ? "var(--primary)" : "var(--muted-foreground)" }}
+              >
+                {hoursStatus.isOpenNow ? "Aberto agora" : "Fechado agora"}
+              </span>
+            </span>
+          )}
           <span className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--brand-amber)" }} />
+            <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
             <span className="font-heading font-semibold text-foreground">
               {products.length}
             </span>{" "}
-            sabores
-          </span>
-          <span className="w-px h-4 bg-border" />
-          <span className="flex items-center gap-1.5">
-            <Cookie className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
-            Feito artesanal
+            produtos
           </span>
           <span className="w-px h-4 bg-border hidden sm:block" />
           <span className="hidden sm:block">Entrega grátis acima de {fmt(freeDeliveryThreshold)}</span>
@@ -424,7 +398,7 @@ export function Catalog({
                     : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-border"
                 }
               `}
-              style={category === cat ? { backgroundColor: "var(--brand-sage)" } : {}}
+              style={category === cat ? { backgroundColor: "var(--primary)" } : {}}
             >
               {cat}
             </button>
@@ -497,7 +471,7 @@ export function Catalog({
         <SheetContent side="right" className="w-full sm:max-w-[420px] flex flex-col p-0 gap-0">
           <SheetHeader className="px-6 pt-6 pb-4">
             <SheetTitle className="font-heading text-2xl font-extrabold tracking-tight flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5" style={{ color: "var(--brand-amber)" }} />
+              <ShoppingCart className="w-5 h-5" style={{ color: "var(--primary)" }} />
               Carrinho
               {cartCount > 0 && (
                 <span className="font-sans text-sm font-normal text-muted-foreground ml-1">
@@ -552,7 +526,7 @@ export function Catalog({
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>Entrega</span>
-                    <span className="font-semibold" style={{ color: "var(--brand-sage)" }}>
+                    <span className="font-semibold" style={{ color: "var(--primary)" }}>
                       {delivery === 0 ? "Grátis" : fmt(delivery)}
                     </span>
                   </div>
@@ -563,7 +537,7 @@ export function Catalog({
                     </span>
                     <span
                       className="font-heading text-2xl font-black tracking-tight"
-                      style={{ color: "var(--brand-amber)" }}
+                      style={{ color: "var(--primary)" }}
                     >
                       {fmt(orderTotal)}
                     </span>
