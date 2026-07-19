@@ -44,7 +44,7 @@ export default async function LoginPage({
               className="font-heading text-base font-bold tracking-tight"
               style={{ color: "var(--brand-sage)" }}
             >
-              SweetOrder
+              PedeNaHora
             </span>
           </div>
           <h1 className="font-heading text-4xl font-black tracking-tight leading-tight">

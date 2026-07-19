@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/session-helpers";
+import { uploadImageToR2, deleteImageFromR2 } from "@/lib/r2";
 
 const productSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório"),
@@ -15,7 +16,38 @@ const productSchema = z.object({
     .trim()
     .regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida (use um hex, ex: #F2E0C4)"),
   visualEmoji: z.string().trim().min(1, "Emoji é obrigatório").max(4, "Use apenas 1 emoji"),
+  imageUrl: z.string().trim().url().nullable().optional(),
 });
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+export type UploadImageState = { url?: string; error?: string };
+
+export async function uploadProductImage(formData: FormData): Promise<UploadImageState> {
+  const admin = await requireAdmin();
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Selecione uma imagem" };
+
+  const ext = ALLOWED_IMAGE_TYPES[file.type];
+  if (!ext) return { error: "Formato inválido. Use JPG, PNG ou WEBP." };
+  if (file.size > MAX_IMAGE_SIZE) return { error: "Imagem muito grande (máx. 5MB)" };
+
+  const key = `products/${admin.storeId}/${crypto.randomUUID()}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  try {
+    const url = await uploadImageToR2(key, buffer, file.type);
+    return { url };
+  } catch {
+    return { error: "Erro ao enviar imagem" };
+  }
+}
 
 export type ProductInput = z.infer<typeof productSchema>;
 export type ProductActionState = { error?: string };
@@ -47,6 +79,7 @@ export async function createProduct(data: ProductInput): Promise<ProductActionSt
     category: parsed.data.category,
     visual_bg: parsed.data.visualBg,
     visual_emoji: parsed.data.visualEmoji,
+    image_url: parsed.data.imageUrl ?? null,
     sort_order: (last?.sort_order ?? 0) + 1,
   });
   if (error) return { error: "Erro ao criar produto" };
@@ -61,6 +94,15 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("products")
+    .select("image_url")
+    .eq("id", id)
+    .eq("store_id", admin.storeId)
+    .maybeSingle();
+
+  const newImageUrl = parsed.data.imageUrl ?? null;
+
   const { error } = await supabase
     .from("products")
     .update({
@@ -70,10 +112,15 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
       category: parsed.data.category,
       visual_bg: parsed.data.visualBg,
       visual_emoji: parsed.data.visualEmoji,
+      image_url: newImageUrl,
     })
     .eq("id", id)
     .eq("store_id", admin.storeId);
   if (error) return { error: "Erro ao atualizar produto" };
+
+  if (existing?.image_url && existing.image_url !== newImageUrl) {
+    await deleteImageFromR2(existing.image_url).catch(() => {});
+  }
 
   revalidateProductPaths();
   return {};
@@ -82,7 +129,19 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
 export async function deleteProduct(id: string) {
   const admin = await requireAdmin();
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("products")
+    .select("image_url")
+    .eq("id", id)
+    .eq("store_id", admin.storeId)
+    .maybeSingle();
+
   await supabase.from("products").delete().eq("id", id).eq("store_id", admin.storeId);
+
+  if (existing?.image_url) {
+    await deleteImageFromR2(existing.image_url).catch(() => {});
+  }
+
   revalidateProductPaths();
 }
 

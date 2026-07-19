@@ -1,4 +1,4 @@
--- SweetOrder — migração para multi-tenant (múltiplas lojas por slug)
+-- PedeNaHora — migração para multi-tenant (múltiplas lojas por slug)
 -- Rode este script inteiro no SQL Editor do seu projeto Supabase, DEPOIS do schema.sql original.
 -- Ele cria a tabela `stores` (substituindo o singleton `store_settings`), a tabela de vínculo
 -- `store_admins` (cada admin autenticado só enxerga/gerencia a própria loja) e adiciona `store_id`

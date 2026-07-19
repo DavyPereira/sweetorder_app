@@ -1,4 +1,4 @@
--- SweetOrder — clientes e endereços salvos ("login discreto" por telefone no checkout)
+-- PedeNaHora — clientes e endereços salvos ("login discreto" por telefone no checkout)
 -- Rode DEPOIS de migration-multitenant.sql.
 --
 -- Nome/telefone/endereço são mais sensíveis que os dados já públicos (produtos, nome da

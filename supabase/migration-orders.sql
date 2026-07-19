@@ -1,4 +1,4 @@
--- SweetOrder — histórico de pedidos por cliente
+-- PedeNaHora — histórico de pedidos por cliente
 -- Rode DEPOIS de migration-customers.sql.
 --
 -- Itens e endereço são gravados como snapshot (jsonb) no momento do pedido, não como

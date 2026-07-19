@@ -1,4 +1,4 @@
--- SweetOrder — painel SaaS (super admin)
+-- PedeNaHora — painel SaaS (super admin)
 -- Rode DEPOIS de migration-multitenant.sql e migration-signup-policies.sql.
 -- Cria a tabela `super_admins` (donos do SaaS, com acesso a todas as lojas) e estende as
 -- policies de RLS existentes para que quem estiver nessa tabela enxergue/gerencie tudo.

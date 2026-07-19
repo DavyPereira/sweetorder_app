@@ -5,7 +5,7 @@ import { SignupForm } from "@/components/signup-form";
 import { CreateStoreForm } from "@/components/create-store-form";
 
 export const metadata = {
-  title: "Cadastre sua loja — SweetOrder",
+  title: "Cadastre sua loja — PedeNaHora",
 };
 
 export default async function CadastroPage() {
@@ -32,7 +32,7 @@ export default async function CadastroPage() {
               className="font-heading text-base font-bold tracking-tight"
               style={{ color: "var(--brand-sage)" }}
             >
-              SweetOrder
+              PedeNaHora
             </span>
           </div>
           <h1 className="font-heading text-4xl font-black tracking-tight leading-tight">

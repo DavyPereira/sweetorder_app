@@ -1,4 +1,4 @@
--- SweetOrder — schema Supabase
+-- PedeNaHora — schema Supabase
 -- Rode este script inteiro no SQL Editor do seu projeto Supabase.
 
 -- ─────────────────────────────────────────────────────────────

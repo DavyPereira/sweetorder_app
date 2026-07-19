@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   ArrowLeft,
+  ImagePlus,
   Loader2,
   MoreVertical,
   Pencil,
   Plus,
   Search,
   Trash2,
+  X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,6 +58,7 @@ import {
   deleteProduct,
   toggleProductActive,
   updateProduct,
+  uploadProductImage,
 } from "@/app/admin/produtos/actions";
 import type { ProductAdminDTO } from "@/lib/types";
 
@@ -82,6 +86,7 @@ const productSchema = z.object({
   category: z.string().trim().min(1, "Categoria é obrigatória"),
   visualBg: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, "Escolha uma cor"),
   visualEmoji: z.string().trim().min(1, "Escolha um emoji").max(4, "Use apenas 1 emoji"),
+  imageUrl: z.string().trim().url().nullable().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -215,12 +220,7 @@ export function ProductsAdmin({ initialProducts }: { initialProducts: ProductAdm
                 className="bg-card border-2 border-border rounded-2xl p-4"
               >
                 <div className="flex items-start gap-3">
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-xl"
-                    style={{ backgroundColor: product.visual.bg }}
-                  >
-                    {product.visual.emoji}
-                  </div>
+                  <ProductThumb product={product} size={44} />
                   <div className="min-w-0 flex-1">
                     <p className="font-heading font-bold text-sm">{product.name}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{product.description}</p>
@@ -279,12 +279,7 @@ export function ProductsAdmin({ initialProducts }: { initialProducts: ProductAdm
                   <TableRow key={product.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xl"
-                          style={{ backgroundColor: product.visual.bg }}
-                        >
-                          {product.visual.emoji}
-                        </div>
+                        <ProductThumb product={product} size={40} />
                         <div className="min-w-0">
                           <p className="font-heading font-bold text-sm truncate">{product.name}</p>
                           <p className="text-xs text-muted-foreground truncate max-w-[220px]">
@@ -375,6 +370,119 @@ export function ProductsAdmin({ initialProducts }: { initialProducts: ProductAdm
   );
 }
 
+function ProductThumb({
+  product,
+  size,
+}: {
+  product: { visual: { bg: string; emoji: string }; imageUrl: string | null; name: string };
+  size: number;
+}) {
+  if (product.imageUrl) {
+    return (
+      <div
+        className="relative rounded-xl overflow-hidden shrink-0"
+        style={{ width: size, height: size }}
+      >
+        <Image
+          src={product.imageUrl}
+          alt={product.name}
+          fill
+          sizes={`${size}px`}
+          className="object-cover"
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      className="rounded-xl flex items-center justify-center shrink-0 text-xl"
+      style={{ backgroundColor: product.visual.bg, width: size, height: size }}
+    >
+      {product.visual.emoji}
+    </div>
+  );
+}
+
+function ProductImageField({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string | null | undefined;
+  onChange: (url: string | null) => void;
+  disabled?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFile = async (file: File) => {
+    setError("");
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await uploadProductImage(formData);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      onChange(result.url ?? null);
+    } finally {
+      setIsUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <FieldLabel>Imagem do produto</FieldLabel>
+      <div className="flex items-center gap-3">
+        {value ? (
+          <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 border-border">
+            <Image src={value} alt="" fill sizes="64px" className="object-cover" />
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              disabled={disabled || isUploading}
+              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer"
+              aria-label="Remover imagem"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center shrink-0 text-muted-foreground">
+            {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+          </div>
+        )}
+        <div>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={disabled || isUploading}
+            className="h-9 px-4 rounded-full text-sm font-medium bg-secondary hover:bg-border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isUploading ? "Enviando..." : value ? "Trocar imagem" : "Escolher imagem"}
+          </button>
+          <p className="mt-1 text-xs text-muted-foreground">JPG, PNG ou WEBP, até 5MB.</p>
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+        }}
+      />
+      {error && <p className="mt-1.5 text-xs font-medium text-destructive">{error}</p>}
+    </div>
+  );
+}
+
 function ProductDialog({
   open,
   onOpenChange,
@@ -404,6 +512,7 @@ function ProductDialog({
       category: product?.category ?? "",
       visualBg: product?.visual.bg ?? COLOR_PRESETS[0],
       visualEmoji: product?.visual.emoji ?? EMOJI_PRESETS[0],
+      imageUrl: product?.imageUrl ?? null,
     },
   });
 
@@ -411,6 +520,7 @@ function ProductDialog({
   const [serverError, setServerError] = useState("");
   const bg = watch("visualBg");
   const emoji = watch("visualEmoji");
+  const imageUrl = watch("imageUrl");
 
   const onSubmit = handleSubmit((data) => {
     setServerError("");
@@ -431,6 +541,7 @@ function ProductDialog({
         price: data.price,
         category: data.category,
         visual: { bg: data.visualBg, emoji: data.visualEmoji },
+        imageUrl: data.imageUrl ?? null,
         active: product?.active ?? true,
         sortOrder: product?.sortOrder ?? 0,
       });
@@ -495,6 +606,14 @@ function ProductDialog({
               />
               <FieldError>{errors.category?.message}</FieldError>
             </div>
+          </div>
+
+          <div className="mt-3">
+            <ProductImageField
+              value={imageUrl}
+              onChange={(url) => setValue("imageUrl", url, { shouldValidate: true })}
+              disabled={isPending}
+            />
           </div>
 
           <div className="mt-3">

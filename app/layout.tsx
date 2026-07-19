@@ -52,7 +52,7 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SweetOrder — Encontre sua loja",
+  title: "PedeNaHora — Encontre sua loja",
   description: "Descubra lojas artesanais e faça seu pedido, entregue direto pra você.",
 };
 

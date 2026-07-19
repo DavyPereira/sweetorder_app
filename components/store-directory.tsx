@@ -103,7 +103,7 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
               className="font-heading text-xl font-bold tracking-tight"
               style={{ color: "var(--brand-sage)" }}
             >
-              SweetOrder
+              PedeNaHora
             </span>
           </span>
 
@@ -118,14 +118,16 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
           </div>
         </div>
 
-        <div className="sm:hidden px-4 pb-3 relative">
-          <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Buscar lojas..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-10 pl-10 rounded-full text-sm"
-          />
+        <div className="sm:hidden px-4 pb-3">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Buscar lojas..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-10 pl-10 rounded-full text-sm"
+            />
+          </div>
         </div>
       </header>
 
@@ -218,9 +220,9 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-2">
             <LayoutGrid className="w-4 h-4" style={{ color: "var(--brand-sage)" }} />
-            <span className="font-heading font-semibold text-foreground">SweetOrder</span>
+            <span className="font-heading font-semibold text-foreground">PedeNaHora</span>
           </span>
-          <span>© {new Date().getFullYear()} SweetOrder. Todos os direitos reservados.</span>
+          <span>© {new Date().getFullYear()} PedeNaHora. Todos os direitos reservados.</span>
         </div>
       </footer>
     </div>

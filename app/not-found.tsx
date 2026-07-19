@@ -23,7 +23,7 @@ export default function NotFound() {
             className="font-heading text-xl font-bold tracking-tight"
             style={{ color: "var(--brand-sage)" }}
           >
-            SweetOrder
+            PedeNaHora
           </span>
         </div>
       </header>

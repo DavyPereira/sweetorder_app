@@ -1,4 +1,4 @@
--- SweetOrder — policies necessárias para o cadastro público de lojas (/cadastro)
+-- PedeNaHora — policies necessárias para o cadastro público de lojas (/cadastro)
 -- Rode DEPOIS de confirmar que supabase/migration-multitenant.sql já rodou com sucesso.
 
 -- Qualquer usuário autenticado (recém-cadastrado) pode criar uma loja.

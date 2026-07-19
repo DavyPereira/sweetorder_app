@@ -19,6 +19,7 @@ export async function getActiveProducts(storeId: string): Promise<ProductDTO[]> 
     price: p.price,
     category: p.category,
     visual: { bg: p.visual_bg, emoji: p.visual_emoji },
+    imageUrl: p.image_url,
   }));
 }
 
@@ -39,6 +40,7 @@ export async function getAllProductsForAdmin(storeId: string): Promise<ProductAd
     price: p.price,
     category: p.category,
     visual: { bg: p.visual_bg, emoji: p.visual_emoji },
+    imageUrl: p.image_url,
     active: p.active,
     sortOrder: p.sort_order,
   }));
