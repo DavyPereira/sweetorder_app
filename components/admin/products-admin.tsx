@@ -428,6 +428,8 @@ function ProductImageField({
         return;
       }
       onChange(result.url ?? null);
+    } catch {
+      setError("Erro ao enviar imagem. Tente uma foto menor ou verifique sua conexão.");
     } finally {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = "";
