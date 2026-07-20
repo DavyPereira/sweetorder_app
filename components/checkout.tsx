@@ -41,7 +41,7 @@ const fmt = (v: number) =>
 
 const TOTAL_STEPS = 4;
 
-type PaymentMethod = "pix" | "credit" | "cash";
+type PaymentMethod = "pix" | "cash";
 type Direction = "forward" | "back";
 
 const addressSchema = z.object({
@@ -131,12 +131,6 @@ const PAYMENT_OPTIONS: {
     icon: <QrCode className="w-7 h-7" />,
   },
   {
-    id: "credit",
-    label: "Cartão de crédito",
-    description: "Até 3× sem juros",
-    icon: <CreditCard className="w-7 h-7" />,
-  },
-  {
     id: "cash",
     label: "Dinheiro na entrega",
     description: "Pague ao receber",
@@ -202,7 +196,6 @@ export function Checkout({
     control: addressControl,
     handleSubmit: handleAddressSubmit,
     setValue: setAddressValue,
-    reset: resetAddress,
     formState: { errors: addressErrors },
   } = useForm<AddressForm>({
     resolver: zodResolver(addressSchema),
@@ -337,7 +330,6 @@ export function Checkout({
 
     const paymentLabels: Record<PaymentMethod, string> = {
       pix: pixKey.trim() ? `PIX — Chave: ${pixKey.trim()}` : "PIX",
-      credit: "Cartão de crédito (até 3× sem juros)",
       cash: change.trim() ? `Dinheiro na entrega — troco para ${change}` : "Dinheiro na entrega",
     };
 
@@ -412,12 +404,19 @@ export function Checkout({
       setSentSummary({ cart, cartTotal, delivery, orderTotal });
       clearCart();
       setSent(true);
+      // Pedido enviado: se o cliente pedir de novo sem recarregar a página, o próximo
+      // checkout deve abrir direto no endereço (step 2), mantendo nome e telefone.
+      setDraft({
+        ...INITIAL_DRAFT,
+        step: 2,
+        name: identity.name ?? "",
+        phone: (identity.phone ?? "").replace(/\D/g, ""),
+        lookupResult,
+      });
     });
   };
 
   const handleBackToCatalog = () => {
-    setDraft(INITIAL_DRAFT);
-    resetAddress(EMPTY_ADDRESS);
     router.push(`/${slug}`);
   };
 
@@ -830,12 +829,6 @@ export function Checkout({
                           {opt.label}
                         </span>
                       </div>
-                      <p
-                        className="text-sm mt-0.5"
-                        style={{ color: selected ? "rgba(255,255,255,0.75)" : "var(--muted-foreground)" }}
-                      >
-                        {opt.description}
-                      </p>
                     </div>
                     <div
                       className="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 absolute top-4 right-4"
@@ -1016,12 +1009,10 @@ export function Checkout({
                 </div>
                 <p className="text-xs text-foreground font-semibold leading-snug">
                   {payment === "pix" && "PIX"}
-                  {payment === "credit" && "Cartão de crédito"}
                   {payment === "cash" && "Dinheiro"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {payment === "pix" && "Aprovação imediata"}
-                  {payment === "credit" && "Até 3× sem juros"}
                   {payment === "cash" && (change.trim() ? `Troco p/ ${change}` : "Na entrega")}
                 </p>
               </div>
