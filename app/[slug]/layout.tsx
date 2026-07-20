@@ -23,16 +23,18 @@ export default async function StoreLayout({
   const settings = await getStoreBySlug(slug);
   if (!settings) notFound();
 
+  const brandColor = /^#[0-9a-fA-F]{6}$/.test(settings.brandColor)
+    ? settings.brandColor
+    : "#4f7a5c";
+
   return (
-    <div
-      style={
-        {
-          "--primary": settings.brandColor,
-          "--ring": settings.brandColor,
-        } as React.CSSProperties
-      }
-    >
+    <>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `:root { --primary: ${brandColor}; --ring: ${brandColor}; }`,
+        }}
+      />
       <CartProvider settings={settings}>{children}</CartProvider>
-    </div>
+    </>
   );
 }

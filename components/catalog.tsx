@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, createElement } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ShoppingCart,
   Search,
@@ -9,7 +10,6 @@ import {
   Minus,
   X,
   ArrowRight,
-  Sparkles,
   Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -200,15 +200,22 @@ export function Catalog({
   const [category, setCategory] = useState("todos");
   const [cartOpen, setCartOpen] = useState(false);
   const [hoursStatus, setHoursStatus] = useState<BusinessHoursStatus | null>(null);
+  const [logoFailed, setLogoFailed] = useState(false);
   const router = useRouter();
-  const storeIcon = useMemo(
-    () =>
-      createElement(getStoreIcon(brandIcon), {
-        className: "w-5 h-5 transition-transform duration-500 hover:rotate-12",
-        style: { color: "var(--primary)" },
-      }),
-    [brandIcon]
-  );
+  const storeIcon = useMemo(() => {
+    const emoji = products[0]?.visual.emoji;
+    if (emoji) {
+      return (
+        <span className="text-xl leading-none transition-transform duration-500 hover:rotate-12">
+          {emoji}
+        </span>
+      );
+    }
+    return createElement(getStoreIcon(brandIcon), {
+      className: "w-5 h-5 transition-transform duration-500 hover:rotate-12",
+      style: { color: "var(--primary)" },
+    });
+  }, [brandIcon, products]);
 
   useEffect(() => {
     // Calculado no client (hora local do visitante convertida pro fuso da loja) de propósito,
@@ -258,7 +265,7 @@ export function Catalog({
           <a href={`/${slug}`} className="flex items-center gap-2 shrink-0" aria-label={storeName}>
             {storeIcon}
             <span
-              className="font-heading text-xl font-bold tracking-tight"
+              className="hidden sm:inline font-heading text-xl font-bold tracking-tight"
               style={{ color: "var(--primary)" }}
             >
               {storeName}
@@ -318,36 +325,44 @@ export function Catalog({
 
       <section className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 pt-8 pb-6 overflow-hidden">
 
-        {/* Pattern: diagonal-cross-grid-top */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-0"
-          style={{
-            backgroundImage: `
-              linear-gradient(45deg, transparent 49%, #e0d5c5 49%, #e0d5c5 51%, transparent 51%),
-              linear-gradient(-45deg, transparent 49%, #e0d5c5 49%, #e0d5c5 51%, transparent 51%)
-            `,
-            backgroundSize: "40px 40px",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%)",
-            maskImage:
-              "radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%)",
-          }}
-        />
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1
+              className="font-heading text-3xl sm:text-4xl lg:text-5xl font-black leading-none tracking-tight text-foreground animate-slide-up"
+              style={{ animationDelay: "0s" }}
+            >
+              {storeName.split(" ").map((word, i, arr) => (
+                <span
+                  key={i}
+                  style={i === arr.length - 1 ? { color: "var(--primary)" } : undefined}
+                >
+                  {word}
+                  {i < arr.length - 1 ? " " : ""}
+                </span>
+              ))}
+            </h1>
 
-        <h1
-          className="font-heading text-3xl sm:text-4xl lg:text-5xl font-black leading-none tracking-tight text-foreground animate-slide-up"
-          style={{ animationDelay: "0s" }}
-        >
-          Nosso <span style={{ color: "var(--primary)" }}>catálogo.</span>
-        </h1>
+            <p
+              className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed animate-slide-up"
+              style={{ animationDelay: "0.1s" }}
+            >
+              Escolha os produtos e receba certinho no seu endereço.
+            </p>
+          </div>
 
-        <p
-          className="mt-3 text-sm sm:text-base text-muted-foreground max-w-md leading-relaxed animate-slide-up"
-          style={{ animationDelay: "0.1s" }}
-        >
-          Escolha os produtos e receba certinho no seu endereço.
-        </p>
+          {!logoFailed && (
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl overflow-hidden bg-white shadow-sm animate-slide-up" style={{ animationDelay: "0.05s" }}>
+              <Image
+                src={`/logos/${slug}.png`}
+                alt={storeName}
+                fill
+                sizes="96px"
+                className="object-contain p-2"
+                onError={() => setLogoFailed(true)}
+              />
+            </div>
+          )}
+        </div>
 
         <div
           className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground animate-slide-up"
@@ -370,11 +385,10 @@ export function Catalog({
             </span>
           )}
           <span className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
             <span className="font-heading font-semibold text-foreground">
               {products.length}
             </span>{" "}
-            produtos
+            sabores
           </span>
           <span className="w-px h-4 bg-border hidden sm:block" />
           <span className="hidden sm:block">Entrega grátis acima de {fmt(freeDeliveryThreshold)}</span>

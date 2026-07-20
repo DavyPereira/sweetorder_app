@@ -25,7 +25,7 @@ export function ActionButton({
   onClick,
   type = "button",
   disabled,
-  color = "var(--brand-sage)",
+  color = "var(--primary)",
 }: {
   children: React.ReactNode;
   onClick?: () => void;

@@ -2,26 +2,28 @@
 
 import { useEffect, useState } from "react";
 
-function readStoredValue<T>(key: string, initialValue: T): T {
-  if (typeof window === "undefined") return initialValue;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : initialValue;
-  } catch {
-    return initialValue;
-  }
-}
-
 export function useLocalStorageState<T>(key: string, initialValue: T) {
-  const [state, setState] = useState<T>(() => readStoredValue(key, initialValue));
+  const [state, setState] = useState<T>(initialValue);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw) setState(JSON.parse(raw) as T);
+    } catch {
+      // localStorage indisponível (modo privado, quota excedida): ignora
+    }
+    setHydrated(true);
+  }, [key]);
+
+  useEffect(() => {
+    if (!hydrated) return;
     try {
       window.localStorage.setItem(key, JSON.stringify(state));
     } catch {
       // localStorage indisponível (modo privado, quota excedida): ignora
     }
-  }, [key, state]);
+  }, [key, state, hydrated]);
 
   return [state, setState] as const;
 }

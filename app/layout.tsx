@@ -52,8 +52,15 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "PedeNaHora — Encontre sua loja",
+  title: "PedeNaHora",
   description: "Descubra lojas artesanais e faça seu pedido, entregue direto pra você.",
+  icons: {
+    icon: [
+      { url: "/favicon-dark.png" },
+      { url: "/favicon-dark.png", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-light.png", media: "(prefers-color-scheme: dark)" },
+    ],
+  },
 };
 
 export default async function RootLayout({
