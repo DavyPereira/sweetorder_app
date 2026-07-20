@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutGrid, Search, Store as StoreIcon, ArrowRight, Rocket, Smartphone, Wallet } from "lucide-react";
+import { Search, Store as StoreIcon, ArrowRight, Rocket, Smartphone, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { StoreListItemDTO } from "@/lib/types";
 
@@ -96,18 +96,8 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
       />
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-          <span className="flex items-center gap-2 shrink-0">
-            <LayoutGrid className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
-            <span
-              className="font-heading text-xl font-bold tracking-tight"
-              style={{ color: "var(--brand-sage)" }}
-            >
-              PedeNaHora
-            </span>
-          </span>
-
-          <div className="flex-1 max-w-md ml-auto relative hidden sm:block">
+        <div className="hidden sm:flex max-w-7xl mx-auto px-4 sm:px-6 h-16 items-center gap-4">
+          <div className="flex-1 max-w-md relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Buscar lojas..."
@@ -138,12 +128,6 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
         <p className="mt-1.5 text-muted-foreground max-w-md">
           Cada loja aqui tem seu próprio catálogo e faz a entrega direto para você.
         </p>
-
-        <div className="mt-5 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <StoreIcon className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
-          <span className="font-heading font-semibold text-foreground">{stores.length}</span>
-          {stores.length === 1 ? " loja cadastrada" : " lojas cadastradas"}
-        </div>
       </section>
 
       <main className="relative flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16">
@@ -215,16 +199,6 @@ export function StoreDirectory({ stores }: { stores: StoreListItemDTO[] }) {
           </div>
         </div>
       </section>
-
-      <footer className="relative border-t border-border">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-2">
-            <LayoutGrid className="w-4 h-4" style={{ color: "var(--brand-sage)" }} />
-            <span className="font-heading font-semibold text-foreground">PedeNaHora</span>
-          </span>
-          <span>© {new Date().getFullYear()} PedeNaHora. Todos os direitos reservados.</span>
-        </div>
-      </footer>
     </div>
   );
 }

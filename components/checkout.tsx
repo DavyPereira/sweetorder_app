@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/lib/cart-context";
 import { ActionButton, FieldError, FieldLabel, inputClass } from "@/components/form-kit";
-import { renderWhatsAppTemplate } from "@/lib/whatsapp-template";
+import { renderWhatsAppTemplate, truncateWhatsAppMessage } from "@/lib/whatsapp-template";
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { formatPhone } from "@/lib/phone";
 import { lookupCustomerAction, submitOrderAction } from "@/app/[slug]/checkout/actions";
@@ -348,7 +348,7 @@ export function Checkout({
       `CEP: ${effectiveAddress.cep}`,
     ].join("\n");
 
-    return renderWhatsAppTemplate(whatsappMessageTemplate, {
+    const message = renderWhatsAppTemplate(whatsappMessageTemplate, {
       loja: storeName,
       itens,
       subtotal: fmt(cartTotal),
@@ -357,6 +357,8 @@ export function Checkout({
       pagamento: paymentLabels[payment],
       endereco,
     });
+
+    return truncateWhatsAppMessage(message);
   };
 
   const [blockedClosed, setBlockedClosed] = useState(false);
