@@ -164,7 +164,7 @@ export function Checkout({
 }) {
   const router = useRouter();
   const { cart, cartCount, cartTotal, delivery, orderTotal, clearCart } = useCart();
-  const { storeName, brandIcon, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee } = settings;
+  const { storeName, brandIcon, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee, pixKey } = settings;
 
   const [hoursStatus, setHoursStatus] = useState<BusinessHoursStatus | null>(null);
   useEffect(() => {
@@ -336,7 +336,7 @@ export function Checkout({
       .join("\n");
 
     const paymentLabels: Record<PaymentMethod, string> = {
-      pix: "PIX",
+      pix: pixKey.trim() ? `PIX — Chave: ${pixKey.trim()}` : "PIX",
       credit: "Cartão de crédito (até 3× sem juros)",
       cash: change.trim() ? `Dinheiro na entrega — troco para ${change}` : "Dinheiro na entrega",
     };
