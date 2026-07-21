@@ -17,6 +17,7 @@ import {
 import { customerIdentitySchema } from "@/lib/schemas/customer";
 import { getBusinessHours } from "@/lib/business-hours";
 import { getBusinessHoursStatus } from "@/lib/business-hours-status";
+import { getStoreById } from "@/lib/settings";
 
 export async function lookupCustomerAction(
   storeId: string,
@@ -59,9 +60,12 @@ export async function submitOrderAction(params: {
   const identity = parseIdentity(params.name, params.phone);
   if (!identity || params.items.length === 0) return { ok: false, reason: "invalid" };
 
-  const businessHours = await getBusinessHours(params.storeId);
-  const hoursStatus = getBusinessHoursStatus(businessHours);
-  if (hoursStatus.hasAnyHours && !hoursStatus.isOpenNow) {
+  const [businessHours, store] = await Promise.all([
+    getBusinessHours(params.storeId),
+    getStoreById(params.storeId),
+  ]);
+  const hoursStatus = getBusinessHoursStatus(businessHours, store.manuallyClosedDate);
+  if (hoursStatus.isManuallyClosedToday || (hoursStatus.hasAnyHours && !hoursStatus.isOpenNow)) {
     return { ok: false, reason: "closed" };
   }
 

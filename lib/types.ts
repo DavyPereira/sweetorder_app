@@ -41,6 +41,7 @@ export type StoreSettingsDTO = {
   themeColor: string;
   brandIcon: string;
   isPublished: boolean;
+  manuallyClosedDate: string | null;
 };
 
 export type BusinessHourShiftDTO = {

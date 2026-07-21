@@ -165,9 +165,9 @@ export function Checkout({
     // Calculado no client (hora local convertida pro fuso da loja) de propósito, pra não
     // divergir do HTML gerado no servidor e causar mismatch de hidratação — mesmo padrão
     // usado no catálogo (components/catalog.tsx).
-    setHoursStatus(getBusinessHoursStatus(businessHours));
-  }, [businessHours]);
-  const isClosed = !!hoursStatus?.hasAnyHours && !hoursStatus.isOpenNow;
+    setHoursStatus(getBusinessHoursStatus(businessHours, settings.manuallyClosedDate));
+  }, [businessHours, settings.manuallyClosedDate]);
+  const isClosed = !!hoursStatus?.isManuallyClosedToday || (!!hoursStatus?.hasAnyHours && !hoursStatus.isOpenNow);
 
   const [draft, setDraft] = useLocalStorageState<CheckoutDraft>(`checkout:${slug}`, INITIAL_DRAFT);
 

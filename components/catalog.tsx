@@ -188,6 +188,7 @@ export function Catalog({
   freeDeliveryThreshold,
   businessHours,
   brandIcon,
+  manuallyClosedDate,
 }: {
   slug: string;
   products: CookieItem[];
@@ -195,6 +196,7 @@ export function Catalog({
   freeDeliveryThreshold: number;
   businessHours: BusinessHourDayDTO[];
   brandIcon?: string;
+  manuallyClosedDate: string | null;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
@@ -221,12 +223,13 @@ export function Catalog({
     // Calculado no client (hora local do visitante convertida pro fuso da loja) de propósito,
     // pra não divergir do HTML gerado no servidor e causar mismatch de hidratação.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHoursStatus(getBusinessHoursStatus(businessHours));
-  }, [businessHours]);
+    setHoursStatus(getBusinessHoursStatus(businessHours, manuallyClosedDate));
+  }, [businessHours, manuallyClosedDate]);
 
   const { cart, cartCount, cartTotal, delivery, orderTotal, addToCart, removeFromCart, deleteFromCart, clearCart } = useCart();
 
-  const isClosed = !!hoursStatus?.hasAnyHours && !hoursStatus.isOpenNow;
+  const isManuallyClosedToday = !!hoursStatus?.isManuallyClosedToday;
+  const isClosed = isManuallyClosedToday || (!!hoursStatus?.hasAnyHours && !hoursStatus.isOpenNow);
 
   const categories = useMemo(
     () => ["todos", ...Array.from(new Set(products.map((p) => p.category)))],
@@ -266,9 +269,12 @@ export function Catalog({
             {storeIcon}
             <span
               className="hidden sm:inline font-heading text-xl font-bold tracking-tight"
-              style={{ color: "var(--primary)" }}
+              style={{ color: isManuallyClosedToday ? "var(--destructive)" : "var(--primary)" }}
             >
               {storeName}
+              {isManuallyClosedToday && (
+                <span className="ml-1.5 text-xs font-semibold align-middle">(fechada hoje)</span>
+              )}
             </span>
           </a>
 
@@ -331,16 +337,29 @@ export function Catalog({
               className="font-heading text-3xl sm:text-4xl lg:text-5xl font-black leading-none tracking-tight text-foreground animate-slide-up"
               style={{ animationDelay: "0s" }}
             >
-              {storeName.split(" ").map((word, i, arr) => (
-                <span
-                  key={i}
-                  style={i === arr.length - 1 ? { color: "var(--primary)" } : undefined}
-                >
-                  {word}
-                  {i < arr.length - 1 ? " " : ""}
-                </span>
-              ))}
+              {isManuallyClosedToday ? (
+                <span style={{ color: "var(--destructive)" }}>{storeName}</span>
+              ) : (
+                storeName.split(" ").map((word, i, arr) => (
+                  <span
+                    key={i}
+                    style={i === arr.length - 1 ? { color: "var(--primary)" } : undefined}
+                  >
+                    {word}
+                    {i < arr.length - 1 ? " " : ""}
+                  </span>
+                ))
+              )}
             </h1>
+
+            {isManuallyClosedToday && (
+              <p
+                className="mt-1 text-sm font-bold animate-slide-up"
+                style={{ color: "var(--destructive)", animationDelay: "0.05s" }}
+              >
+                Fechada hoje — não estamos recebendo pedidos.
+              </p>
+            )}
 
             <p
               className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed animate-slide-up"

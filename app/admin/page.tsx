@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/session-helpers";
 import { getStoreById } from "@/lib/settings";
 import { getStoreIcon } from "@/lib/store-icons";
+import { getTodayDateInStoreTimezone } from "@/lib/business-hours-status";
+import { StoreClosureToggle } from "@/components/admin/store-closure-toggle";
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
@@ -34,6 +36,12 @@ export default async function AdminDashboardPage() {
       <p className="mt-1.5 text-muted-foreground">
         Gerencie os produtos e as informações da sua loja por aqui.
       </p>
+
+      <div className="mt-6">
+        <StoreClosureToggle
+          initialClosedToday={store.manuallyClosedDate === getTodayDateInStoreTimezone()}
+        />
+      </div>
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard icon={<Package className="w-4 h-4" />} label="Produtos" value={totalProducts ?? 0} color="var(--brand-sage)" />

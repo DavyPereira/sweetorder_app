@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/session-helpers";
 import { storeSettingsSchema, type StoreSettingsFormData } from "@/lib/schemas/store-settings";
 import { businessHoursSchema, type BusinessHoursFormData } from "@/lib/schemas/business-hours";
+import { getTodayDateInStoreTimezone } from "@/lib/business-hours-status";
 
 export type SettingsInput = StoreSettingsFormData;
 export type SettingsActionState = { error?: string };
@@ -42,6 +43,39 @@ export async function updateStoreSettings(data: SettingsInput): Promise<Settings
   revalidatePath("/admin/loja");
   revalidatePath("/");
   revalidatePath("/[slug]", "layout");
+  return {};
+}
+
+function revalidateStorefrontPaths() {
+  revalidatePath("/admin");
+  revalidatePath("/admin/loja");
+  revalidatePath("/");
+  revalidatePath("/[slug]", "layout");
+}
+
+export async function closeStoreToday(): Promise<SettingsActionState> {
+  const admin = await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("stores")
+    .update({ manually_closed_date: getTodayDateInStoreTimezone() })
+    .eq("id", admin.storeId);
+  if (error) return { error: "Erro ao fechar a loja" };
+
+  revalidateStorefrontPaths();
+  return {};
+}
+
+export async function reopenStore(): Promise<SettingsActionState> {
+  const admin = await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("stores")
+    .update({ manually_closed_date: null })
+    .eq("id", admin.storeId);
+  if (error) return { error: "Erro ao reabrir a loja" };
+
+  revalidateStorefrontPaths();
   return {};
 }
 

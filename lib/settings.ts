@@ -21,6 +21,7 @@ function mapStoreRow(row: {
   theme_color: string;
   brand_icon: string;
   is_published: boolean;
+  manually_closed_date: string | null;
 }): StoreSettingsDTO {
   return {
     id: row.id,
@@ -41,6 +42,7 @@ function mapStoreRow(row: {
     themeColor: row.theme_color,
     brandIcon: row.brand_icon,
     isPublished: row.is_published,
+    manuallyClosedDate: row.manually_closed_date,
   };
 }
 
