@@ -1,5 +1,6 @@
 import { getAllProductsForAdmin } from "@/lib/products";
 import { requireAdmin } from "@/lib/session-helpers";
+import { getStoreById } from "@/lib/settings";
 import { ProductsAdmin } from "@/components/admin/products-admin";
 
 export const metadata = {
@@ -8,6 +9,9 @@ export const metadata = {
 
 export default async function AdminProductsPage() {
   const admin = await requireAdmin();
-  const products = await getAllProductsForAdmin(admin.storeId);
-  return <ProductsAdmin initialProducts={products} />;
+  const [products, store] = await Promise.all([
+    getAllProductsForAdmin(admin.storeId),
+    getStoreById(admin.storeId),
+  ]);
+  return <ProductsAdmin initialProducts={products} brandIcon={store.brandIcon} />;
 }

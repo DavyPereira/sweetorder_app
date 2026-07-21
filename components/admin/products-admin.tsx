@@ -60,6 +60,7 @@ import {
   updateProduct,
   uploadProductImage,
 } from "@/app/admin/produtos/actions";
+import { getStoreEmoji, getStoreEmojiPresets } from "@/lib/store-icons";
 import type { ProductAdminDTO } from "@/lib/types";
 
 const fmt = (v: number) =>
@@ -77,8 +78,6 @@ const COLOR_PRESETS = [
   "#8B1A1A",
 ];
 
-const EMOJI_PRESETS = ["🍪", "🍫", "🥜", "🍵", "🫐", "🌰", "🥥", "🌾", "❤️"];
-
 const productSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório"),
   description: z.string().trim().min(1, "Descrição é obrigatória"),
@@ -91,8 +90,15 @@ const productSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>;
 
-export function ProductsAdmin({ initialProducts }: { initialProducts: ProductAdminDTO[] }) {
+export function ProductsAdmin({
+  initialProducts,
+  brandIcon,
+}: {
+  initialProducts: ProductAdminDTO[];
+  brandIcon?: string;
+}) {
   const router = useRouter();
+  const emojiPresets = useMemo(() => getStoreEmojiPresets(brandIcon), [brandIcon]);
   const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
@@ -205,7 +211,7 @@ export function ProductsAdmin({ initialProducts }: { initialProducts: ProductAdm
 
       {filtered.length === 0 ? (
         <div className="mt-6 bg-card border-2 border-border rounded-3xl overflow-hidden flex flex-col items-center justify-center py-16 text-center gap-3">
-          <span className="text-5xl select-none">🍪</span>
+          <span className="text-5xl select-none">{getStoreEmoji(brandIcon)}</span>
           <p className="font-heading font-bold">Nenhum produto encontrado</p>
           <p className="text-sm text-muted-foreground">
             {products.length === 0 ? "Cadastre o primeiro produto do catálogo." : "Tente outro termo ou categoria."}
@@ -335,6 +341,7 @@ export function ProductsAdmin({ initialProducts }: { initialProducts: ProductAdm
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         product={editing}
+        emojiPresets={emojiPresets}
         onSaved={(saved) => {
           setProducts((prev) => {
             const exists = prev.some((p) => p.id === saved.id);
@@ -489,11 +496,13 @@ function ProductDialog({
   open,
   onOpenChange,
   product,
+  emojiPresets,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: ProductAdminDTO | null;
+  emojiPresets: string[];
   onSaved: (product: ProductAdminDTO) => void;
 }) {
   const isEditing = !!product;
@@ -513,7 +522,7 @@ function ProductDialog({
       price: product?.price ?? 0,
       category: product?.category ?? "",
       visualBg: product?.visual.bg ?? COLOR_PRESETS[0],
-      visualEmoji: product?.visual.emoji ?? EMOJI_PRESETS[0],
+      visualEmoji: product?.visual.emoji ?? emojiPresets[0],
       imageUrl: product?.imageUrl ?? null,
     },
   });
@@ -648,7 +657,7 @@ function ProductDialog({
           <div className="mt-3">
             <FieldLabel>Emoji</FieldLabel>
             <div className="flex items-center gap-2 flex-wrap">
-              {EMOJI_PRESETS.map((e) => (
+              {emojiPresets.map((e) => (
                 <button
                   key={e}
                   type="button"
@@ -675,7 +684,7 @@ function ProductDialog({
           )}
 
           <div className="mt-6">
-            <ActionButton type="submit" disabled={isPending}>
+            <ActionButton type="submit" color="var(--brand-sage)" disabled={isPending}>
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : isEditing ? "Salvar alterações" : "Criar produto"}
             </ActionButton>
           </div>

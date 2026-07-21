@@ -10,18 +10,18 @@ export const ALLOWED_WHATSAPP_PLACEHOLDERS = [
 
 export type WhatsAppPlaceholder = (typeof ALLOWED_WHATSAPP_PLACEHOLDERS)[number];
 
-export const DEFAULT_WHATSAPP_TEMPLATE = `🍪 *Novo Pedido — {{loja}}*
+export const DEFAULT_WHATSAPP_TEMPLATE = `*Novo Pedido — {{loja}}*
 
 *Itens do pedido:*
 {{itens}}
 
 *Subtotal:* {{subtotal}}
 *Taxa de entrega:* {{entrega}}
-*💰 Total: {{total}}*
+*Total: {{total}}*
 
 *Pagamento:* {{pagamento}}
 
-*📍 Endereço de entrega:*
+*Endereço de entrega:*
 {{endereco}}`;
 
 export function extractWhatsAppPlaceholders(template: string): string[] {

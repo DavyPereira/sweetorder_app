@@ -30,7 +30,7 @@ import { renderWhatsAppTemplate, truncateWhatsAppMessage } from "@/lib/whatsapp-
 import { useLocalStorageState } from "@/lib/use-local-storage-state";
 import { formatPhone } from "@/lib/phone";
 import { lookupCustomerAction, submitOrderAction } from "@/app/[slug]/checkout/actions";
-import { getStoreIcon } from "@/lib/store-icons";
+import { getStoreEmoji, getStoreIcon } from "@/lib/store-icons";
 import type { CustomerLookupResult } from "@/lib/customers";
 import type { StoreSettingsDTO, BusinessHourDayDTO } from "@/lib/types";
 import type { CartEntry } from "@/lib/cart-context";
@@ -446,9 +446,9 @@ export function Checkout({
       <div className="min-h-screen bg-background flex flex-col">
         <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} brandIcon={brandIcon} slug={slug} onBack={() => router.back()} />
         <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
-          <span className="text-7xl select-none">🍪</span>
+          <span className="text-7xl select-none">{getStoreEmoji(brandIcon)}</span>
           <h2 className="font-heading text-3xl font-black">Carrinho vazio</h2>
-          <p className="text-muted-foreground">Adicione cookies antes de finalizar.</p>
+          <p className="text-muted-foreground">Adicione produtos antes de finalizar.</p>
           <ActionButton color="var(--primary)" onClick={() => router.push(`/${slug}`)}>Ver catálogo</ActionButton>
         </div>
       </div>
@@ -481,7 +481,7 @@ export function Checkout({
           aria-hidden
           className="pointer-events-none absolute -top-2 right-2 text-4xl opacity-10 select-none rotate-12 hidden md:inline"
         >
-          🍪
+          {getStoreEmoji(brandIcon)}
         </span>
 
         {/* ── Step 1: Identificação ─────────────────────────────────────────── */}

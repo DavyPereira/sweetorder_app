@@ -18,7 +18,9 @@ function mapStoreRow(row: {
   accepts_cash: boolean;
   accepts_card: boolean;
   brand_color: string;
+  theme_color: string;
   brand_icon: string;
+  is_published: boolean;
 }): StoreSettingsDTO {
   return {
     id: row.id,
@@ -36,7 +38,9 @@ function mapStoreRow(row: {
     acceptsCash: row.accepts_cash,
     acceptsCard: row.accepts_card,
     brandColor: row.brand_color,
+    themeColor: row.theme_color,
     brandIcon: row.brand_icon,
+    isPublished: row.is_published,
   };
 }
 
@@ -72,6 +76,7 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
   const { data, error } = await supabase
     .from("stores")
     .select("id, slug, store_name, store_description, brand_color")
+    .eq("is_published", true)
     .order("store_name", { ascending: true });
 
   if (error) throw error;

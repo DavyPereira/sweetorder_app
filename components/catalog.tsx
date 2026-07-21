@@ -28,7 +28,7 @@ import {
   getBusinessHoursStatus,
   type BusinessHoursStatus,
 } from "@/lib/business-hours-status";
-import { getStoreIcon } from "@/lib/store-icons";
+import { getStoreEmoji, getStoreIcon } from "@/lib/store-icons";
 import type { BusinessHourDayDTO } from "@/lib/types";
 
 const fmt = (v: number) =>
@@ -448,9 +448,9 @@ export function Catalog({
         />
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-            <span className="text-6xl animate-pulse-soft select-none">🍪</span>
+            <span className="text-6xl animate-pulse-soft select-none">{getStoreEmoji(brandIcon)}</span>
             <h2 className="font-heading text-2xl font-bold text-foreground">
-              Nenhum cookie encontrado
+              Nenhum produto encontrado
             </h2>
             <p className="text-muted-foreground">Tente outro termo ou categoria.</p>
             <Button
@@ -499,12 +499,12 @@ export function Catalog({
 
           {cart.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-              <span className="text-6xl animate-pulse-soft select-none">🍪</span>
+              <span className="text-6xl animate-pulse-soft select-none">{getStoreEmoji(brandIcon)}</span>
               <h3 className="font-heading text-xl font-bold text-foreground">
                 Carrinho vazio
               </h3>
               <p className="text-sm text-muted-foreground">
-                Adicione cookies do catálogo para começar.
+                Adicione produtos do catálogo para começar.
               </p>
               <Button
                 variant="outline"

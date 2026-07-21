@@ -134,7 +134,7 @@ export function BusinessHoursFields({ initialBusinessHours }: { initialBusinessH
 
         <div className="mt-6 flex items-center gap-4">
           <div className="flex-1">
-            <ActionButton type="submit" disabled={isPending}>
+            <ActionButton type="submit" color="var(--brand-sage)" disabled={isPending}>
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar horários"}
             </ActionButton>
           </div>

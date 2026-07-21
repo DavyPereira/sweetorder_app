@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, Cookie, Layers, Package, Store } from "lucide-react";
+import { ArrowRight, Layers, Package, Store } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/session-helpers";
+import { getStoreById } from "@/lib/settings";
+import { getStoreIcon } from "@/lib/store-icons";
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
   const supabase = await createClient();
 
-  const [{ count: totalProducts }, { count: activeProducts }, { data: categoryRows }] =
+  const [{ count: totalProducts }, { count: activeProducts }, { data: categoryRows }, store] =
     await Promise.all([
       supabase
         .from("products")
@@ -19,8 +21,10 @@ export default async function AdminDashboardPage() {
         .eq("store_id", admin.storeId)
         .eq("active", true),
       supabase.from("products").select("category").eq("store_id", admin.storeId),
+      getStoreById(admin.storeId),
     ]);
   const categories = new Set((categoryRows ?? []).map((p) => p.category));
+  const ActiveIcon = getStoreIcon(store.brandIcon);
 
   return (
     <div>
@@ -33,7 +37,7 @@ export default async function AdminDashboardPage() {
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard icon={<Package className="w-4 h-4" />} label="Produtos" value={totalProducts ?? 0} color="var(--brand-sage)" />
-        <StatCard icon={<Cookie className="w-4 h-4" />} label="Ativos no catálogo" value={activeProducts ?? 0} color="var(--brand-amber)" />
+        <StatCard icon={<ActiveIcon className="w-4 h-4" />} label="Ativos no catálogo" value={activeProducts ?? 0} color="var(--brand-amber)" />
         <StatCard icon={<Layers className="w-4 h-4" />} label="Categorias" value={categories.size} color="var(--brand-sage)" />
       </div>
 
@@ -42,7 +46,7 @@ export default async function AdminDashboardPage() {
           href="/admin/produtos"
           icon={<Package className="w-7 h-7" />}
           title="Produtos"
-          description="Cadastre, edite e organize os cookies do catálogo."
+          description="Cadastre, edite e organize os produtos do catálogo."
         />
         <NavCard
           href="/admin/loja"

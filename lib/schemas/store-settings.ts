@@ -41,9 +41,14 @@ export const storeSettingsSchema = z.object({
     .string()
     .trim()
     .regex(/^#[0-9a-fA-F]{6}$/, "Use uma cor hexadecimal válida, ex: #4f7a5c"),
+  themeColor: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Use uma cor hexadecimal válida, ex: #4f7a5c"),
   brandIcon: z.enum(STORE_ICON_NAMES as [string, ...string[]], {
     error: "Escolha um ícone válido",
   }),
+  isPublished: z.boolean(),
 });
 
 export type StoreSettingsFormData = z.infer<typeof storeSettingsSchema>;

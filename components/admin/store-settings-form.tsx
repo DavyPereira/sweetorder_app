@@ -17,6 +17,26 @@ import type { BusinessHourDayDTO, StoreSettingsDTO } from "@/lib/types";
 
 export type SettingsFormData = StoreSettingsFormData;
 
+const FIELD_TAB: Record<keyof SettingsFormData, "geral" | "contato" | "entrega"> = {
+  storeName: "geral",
+  storeDescription: "geral",
+  slug: "geral",
+  brandColor: "geral",
+  themeColor: "geral",
+  brandIcon: "geral",
+  isPublished: "geral",
+  email: "geral",
+  whatsappNumber: "contato",
+  whatsappMessageTemplate: "contato",
+  instagramUrl: "contato",
+  freeDeliveryThreshold: "entrega",
+  deliveryFee: "entrega",
+  acceptsPix: "entrega",
+  pixKey: "entrega",
+  acceptsCash: "entrega",
+  acceptsCard: "entrega",
+};
+
 export function StoreSettingsForm({
   initialSettings,
   initialBusinessHours,
@@ -30,22 +50,30 @@ export function StoreSettingsForm({
   });
   const { handleSubmit } = methods;
 
+  const [activeTab, setActiveTab] = useState("geral");
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const onSubmit = handleSubmit((data) => {
-    setServerError("");
-    setSaved(false);
-    startTransition(async () => {
-      const result = await updateStoreSettings(data);
-      if (result?.error) {
-        setServerError(result.error);
-        return;
-      }
-      setSaved(true);
-    });
-  });
+  const onSubmit = handleSubmit(
+    (data) => {
+      setServerError("");
+      setSaved(false);
+      startTransition(async () => {
+        const result = await updateStoreSettings(data);
+        if (result?.error) {
+          setServerError(result.error);
+          return;
+        }
+        setSaved(true);
+      });
+    },
+    (errors) => {
+      const firstInvalidField = Object.keys(errors)[0] as keyof SettingsFormData | undefined;
+      const tab = firstInvalidField ? FIELD_TAB[firstInvalidField] : undefined;
+      if (tab) setActiveTab(tab);
+    }
+  );
 
   return (
     <div>
@@ -62,7 +90,7 @@ export function StoreSettingsForm({
         Personalize sua loja: identidade, contato, horários, entrega e pagamento.
       </p>
 
-      <Tabs defaultValue="geral" className="mt-6 max-w-4xl">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6 max-w-4xl">
         <TabsList>
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="contato">Contato</TabsTrigger>
@@ -88,7 +116,7 @@ export function StoreSettingsForm({
 
             <div className="mt-6 flex items-center gap-4">
               <div className="flex-1">
-                <ActionButton type="submit" disabled={isPending}>
+                <ActionButton type="submit" color="var(--brand-sage)" disabled={isPending}>
                   {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar alterações"}
                 </ActionButton>
               </div>

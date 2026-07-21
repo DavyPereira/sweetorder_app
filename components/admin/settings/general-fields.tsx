@@ -3,6 +3,7 @@
 import { Controller, useFormContext } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { FieldError, FieldLabel, inputClass } from "@/components/form-kit";
 import { STORE_ICONS, STORE_ICON_NAMES } from "@/lib/store-icons";
 import type { SettingsFormData } from "@/components/admin/store-settings-form";
@@ -16,10 +17,34 @@ export function GeneralFields({ isPending }: { isPending: boolean }) {
   } = useFormContext<SettingsFormData>();
 
   const slug = watch("slug");
+  const isPublished = watch("isPublished");
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   return (
     <div className="bg-card border-2 border-border rounded-3xl p-5 md:p-8 flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-border p-4">
+        <div>
+          <span className="font-heading font-bold text-sm">Loja publicada</span>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {isPublished
+              ? "Sua loja aparece no diretório inicial, junto com as outras."
+              : "Sua loja fica fora do diretório inicial. Só quem tiver o link direto (/" + (slug || "sua-loja") + ") consegue acessar — use para terminar de configurar antes de abrir ao público."}
+          </p>
+        </div>
+        <Controller
+          name="isPublished"
+          control={control}
+          render={({ field }) => (
+            <Switch
+              checked={field.value}
+              onCheckedChange={field.onChange}
+              disabled={isPending}
+              aria-label="Loja publicada"
+            />
+          )}
+        />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <div>
           <FieldLabel>Nome da loja</FieldLabel>
@@ -77,7 +102,7 @@ export function GeneralFields({ isPending }: { isPending: boolean }) {
       </div>
 
       <div>
-        <FieldLabel>Cor de marca</FieldLabel>
+        <FieldLabel>Cor do card</FieldLabel>
         <Controller
           name="brandColor"
           control={control}
@@ -89,7 +114,7 @@ export function GeneralFields({ isPending }: { isPending: boolean }) {
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
                 className="h-12 w-14 shrink-0 rounded-xl border-2 border-border bg-transparent p-1 cursor-pointer disabled:cursor-not-allowed"
-                aria-label="Selecionar cor de marca"
+                aria-label="Selecionar cor do card"
               />
               <Input
                 placeholder="#4f7a5c"
@@ -104,6 +129,37 @@ export function GeneralFields({ isPending }: { isPending: boolean }) {
         <FieldError>{errors.brandColor?.message}</FieldError>
         <p className="mt-1.5 text-xs text-muted-foreground">
           Usada para destacar sua loja no diretório inicial.
+        </p>
+      </div>
+
+      <div>
+        <FieldLabel>Cor do tema do site</FieldLabel>
+        <Controller
+          name="themeColor"
+          control={control}
+          render={({ field }) => (
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                disabled={isPending}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                className="h-12 w-14 shrink-0 rounded-xl border-2 border-border bg-transparent p-1 cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Selecionar cor do tema do site"
+              />
+              <Input
+                placeholder="#4f7a5c"
+                disabled={isPending}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                className={inputClass(!!errors.themeColor, "rounded-xl h-12 px-4 py-0 leading-[2.75rem] border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors font-mono")}
+              />
+            </div>
+          )}
+        />
+        <FieldError>{errors.themeColor?.message}</FieldError>
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Usada nos botões e destaques dentro do catálogo, checkout e painel da sua loja.
         </p>
       </div>
 

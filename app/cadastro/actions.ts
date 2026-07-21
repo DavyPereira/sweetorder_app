@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser, getCurrentAdmin } from "@/lib/session-helpers";
 import { signUpSchema, createStoreSchema } from "@/lib/schemas/signup";
+import { DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/whatsapp-template";
 
 export async function createStoreForUser(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -20,7 +21,12 @@ export async function createStoreForUser(
 
   const { data: store, error: storeError } = await supabase
     .from("stores")
-    .insert({ store_name: storeName, store_description: "", slug })
+    .insert({
+      store_name: storeName,
+      store_description: "",
+      slug,
+      whatsapp_message_template: DEFAULT_WHATSAPP_TEMPLATE,
+    })
     .select("id")
     .single();
   if (storeError || !store) return "Erro ao criar a loja";

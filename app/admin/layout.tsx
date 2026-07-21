@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Cookie, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { getAuthUser, getCurrentAdmin } from "@/lib/session-helpers";
+import { getStoreById } from "@/lib/settings";
+import { getStoreIcon } from "@/lib/store-icons";
 import { logoutAction } from "@/app/login/actions";
 
 export const metadata = {
@@ -15,12 +17,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/cadastro");
 
+  const store = await getStoreById(admin.storeId);
+  const HeaderIcon = getStoreIcon(store.brandIcon);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-4">
           <Link href="/admin" className="flex items-center gap-2 shrink-0">
-            <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
+            <HeaderIcon className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
             <span
               className="font-heading text-lg font-bold tracking-tight hidden sm:inline"
               style={{ color: "var(--brand-sage)" }}

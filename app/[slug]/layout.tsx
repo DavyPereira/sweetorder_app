@@ -24,13 +24,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!settings) return {};
 
   if (slug === "lolocookies") {
-    const brandColor = /^#[0-9a-fA-F]{6}$/.test(settings.brandColor)
-      ? settings.brandColor
+    const themeColor = /^#[0-9a-fA-F]{6}$/.test(settings.themeColor)
+      ? settings.themeColor
       : "#4f7a5c";
     return {
       title: settings.storeName,
       description: settings.storeDescription,
-      icons: { icon: buildCookieFaviconUrl(brandColor) },
+      icons: { icon: buildCookieFaviconUrl(themeColor) },
     };
   }
 
@@ -51,15 +51,15 @@ export default async function StoreLayout({
   const settings = await getStoreBySlug(slug);
   if (!settings) notFound();
 
-  const brandColor = /^#[0-9a-fA-F]{6}$/.test(settings.brandColor)
-    ? settings.brandColor
+  const themeColor = /^#[0-9a-fA-F]{6}$/.test(settings.themeColor)
+    ? settings.themeColor
     : "#4f7a5c";
 
   return (
     <>
       <style
         dangerouslySetInnerHTML={{
-          __html: `:root { --primary: ${brandColor}; --ring: ${brandColor}; }`,
+          __html: `:root { --primary: ${themeColor}; --ring: ${themeColor}; }`,
         }}
       />
       <CartProvider settings={settings}>{children}</CartProvider>

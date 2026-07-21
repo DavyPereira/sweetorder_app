@@ -37,7 +37,9 @@ export type StoreSettingsDTO = {
   acceptsCash: boolean;
   acceptsCard: boolean;
   brandColor: string;
+  themeColor: string;
   brandIcon: string;
+  isPublished: boolean;
 };
 
 export type BusinessHourShiftDTO = {
