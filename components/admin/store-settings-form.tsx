@@ -116,12 +116,12 @@ export function StoreSettingsForm({
 
             <div className="mt-6 flex items-center gap-4">
               <div className="flex-1">
-                <ActionButton type="submit" color="var(--brand-sage)" disabled={isPending}>
+                <ActionButton type="submit" color="var(--primary)" disabled={isPending}>
                   {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar alterações"}
                 </ActionButton>
               </div>
               {saved && !isPending && (
-                <span className="flex items-center gap-1.5 text-sm font-semibold shrink-0" style={{ color: "var(--brand-sage)" }}>
+                <span className="flex items-center gap-1.5 text-sm font-semibold shrink-0" style={{ color: "var(--primary)" }}>
                   <Check className="w-4 h-4" /> Salvo com sucesso
                 </span>
               )}

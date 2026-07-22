@@ -44,9 +44,9 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard icon={<Package className="w-4 h-4" />} label="Produtos" value={totalProducts ?? 0} color="var(--brand-sage)" />
+        <StatCard icon={<Package className="w-4 h-4" />} label="Produtos" value={totalProducts ?? 0} color="var(--primary)" />
         <StatCard icon={<ActiveIcon className="w-4 h-4" />} label="Ativos no catálogo" value={activeProducts ?? 0} color="var(--brand-amber)" />
-        <StatCard icon={<Layers className="w-4 h-4" />} label="Categorias" value={categories.size} color="var(--brand-sage)" />
+        <StatCard icon={<Layers className="w-4 h-4" />} label="Categorias" value={categories.size} color="var(--primary)" />
       </div>
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">

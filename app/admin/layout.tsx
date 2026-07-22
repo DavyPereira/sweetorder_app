@@ -19,16 +19,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const store = await getStoreById(admin.storeId);
   const HeaderIcon = getStoreIcon(store.brandIcon);
+  const themeColor = /^#[0-9a-fA-F]{6}$/.test(store.themeColor) ? store.themeColor : "#4f7a5c";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `:root { --primary: ${themeColor}; --ring: ${themeColor}; }`,
+        }}
+      />
       <header className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-4">
           <Link href="/admin" className="flex items-center gap-2 shrink-0">
-            <HeaderIcon className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
+            <HeaderIcon className="w-5 h-5" style={{ color: "var(--primary)" }} />
             <span
               className="font-heading text-lg font-bold tracking-tight hidden sm:inline"
-              style={{ color: "var(--brand-sage)" }}
+              style={{ color: "var(--primary)" }}
             >
               Painel
             </span>

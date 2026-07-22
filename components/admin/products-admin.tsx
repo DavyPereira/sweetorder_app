@@ -174,7 +174,7 @@ export function ProductsAdmin({
         <button
           onClick={openCreate}
           className="h-11 px-5 rounded-full font-heading font-bold text-sm text-white cursor-pointer active:scale-95 transition-transform flex items-center gap-2 shrink-0"
-          style={{ backgroundColor: "var(--brand-sage)" }}
+          style={{ backgroundColor: "var(--primary)" }}
         >
           <Plus className="w-4 h-4" />
           Novo produto
@@ -201,7 +201,7 @@ export function ProductsAdmin({
                   ? "text-white"
                   : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-border"
               }`}
-              style={category === cat ? { backgroundColor: "var(--brand-sage)" } : {}}
+              style={category === cat ? { backgroundColor: "var(--primary)" } : {}}
             >
               {cat}
             </button>
@@ -684,7 +684,7 @@ function ProductDialog({
           )}
 
           <div className="mt-6">
-            <ActionButton type="submit" color="var(--brand-sage)" disabled={isPending}>
+            <ActionButton type="submit" color="var(--primary)" disabled={isPending}>
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : isEditing ? "Salvar alterações" : "Criar produto"}
             </ActionButton>
           </div>
