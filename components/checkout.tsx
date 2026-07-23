@@ -41,7 +41,7 @@ const fmt = (v: number) =>
 
 const TOTAL_STEPS = 4;
 
-type PaymentMethod = "pix" | "cash";
+type PaymentMethod = "pix" | "cash" | "card";
 type Direction = "forward" | "back";
 
 const addressSchema = z.object({
@@ -136,6 +136,12 @@ const PAYMENT_OPTIONS: {
     description: "Pague ao receber",
     icon: <Banknote className="w-7 h-7" />,
   },
+  {
+    id: "card",
+    label: "Cartão",
+    description: "Pague ao receber",
+    icon: <CreditCard className="w-7 h-7" />,
+  },
 ];
 
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -158,7 +164,18 @@ export function Checkout({
 }) {
   const router = useRouter();
   const { cart, cartCount, cartTotal, delivery, orderTotal, clearCart } = useCart();
-  const { storeName, brandIcon, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee, pixKey } = settings;
+  const { storeName, brandIcon, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee, pixKey, acceptsPix, acceptsCash, acceptsCard, acceptsInstallments } = settings;
+
+  const availablePaymentOptions = useMemo(
+    () =>
+      PAYMENT_OPTIONS.filter(
+        (opt) =>
+          (opt.id === "pix" && acceptsPix) ||
+          (opt.id === "cash" && acceptsCash) ||
+          (opt.id === "card" && acceptsCard)
+      ),
+    [acceptsPix, acceptsCash, acceptsCard]
+  );
 
   const [hoursStatus, setHoursStatus] = useState<BusinessHoursStatus | null>(null);
   useEffect(() => {
@@ -216,11 +233,25 @@ export function Checkout({
     orderTotal: number;
   } | null>(null);
 
-  const displayCart = sentSummary?.cart ?? cart;
+  useEffect(() => {
+    if (availablePaymentOptions.length === 0) return;
+    if (!availablePaymentOptions.some((opt) => opt.id === payment)) {
+      setPayment(availablePaymentOptions[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availablePaymentOptions]);
+
+  const isCardAdjusted = payment === "card" && acceptsInstallments;
+  const priceForEntry = (entry: CartEntry) =>
+    isCardAdjusted && entry.cardPrice != null ? entry.cardPrice : entry.price;
+  const cartTotalForPayment = cart.reduce((s, e) => s + priceForEntry(e) * e.quantity, 0);
+  const orderTotalForPayment = cartTotalForPayment + delivery;
+
+  const displayCart = sentSummary?.cart ?? cart.map((e) => ({ ...e, price: priceForEntry(e) }));
   const displayCartCount = displayCart.reduce((s, i) => s + i.quantity, 0);
-  const displayCartTotal = sentSummary?.cartTotal ?? cartTotal;
+  const displayCartTotal = sentSummary?.cartTotal ?? cartTotalForPayment;
   const displayDelivery = sentSummary?.delivery ?? delivery;
-  const displayOrderTotal = sentSummary?.orderTotal ?? orderTotal;
+  const displayOrderTotal = sentSummary?.orderTotal ?? orderTotalForPayment;
 
   useEffect(() => {
     setDraft({
@@ -325,12 +356,20 @@ export function Checkout({
 
   const buildMessage = () => {
     const itens = cart
-      .map((entry) => `• ${entry.quantity}× ${entry.name} — ${fmt(entry.price * entry.quantity)}`)
+      .map((entry) => {
+        const price = priceForEntry(entry);
+        const installmentNote =
+          isCardAdjusted && entry.installments && entry.cardPrice != null
+            ? ` (${entry.installments}x de ${fmt(entry.cardPrice / entry.installments)})`
+            : "";
+        return `• ${entry.quantity}× ${entry.name} — ${fmt(price * entry.quantity)}${installmentNote}`;
+      })
       .join("\n");
 
     const paymentLabels: Record<PaymentMethod, string> = {
       pix: pixKey.trim() ? `PIX — Chave: ${pixKey.trim()}` : "PIX",
       cash: change.trim() ? `Dinheiro na entrega — troco para ${change}` : "Dinheiro na entrega",
+      card: isCardAdjusted ? "Cartão — valor ajustado para parcelamento" : "Cartão",
     };
 
     const endereco = [
@@ -343,9 +382,9 @@ export function Checkout({
     const message = renderWhatsAppTemplate(whatsappMessageTemplate, {
       loja: storeName,
       itens,
-      subtotal: fmt(cartTotal),
+      subtotal: fmt(cartTotalForPayment),
       entrega: delivery === 0 ? "Grátis 🎉" : fmt(delivery),
-      total: fmt(orderTotal),
+      total: fmt(orderTotalForPayment),
       pagamento: paymentLabels[payment],
       endereco,
     });
@@ -375,11 +414,11 @@ export function Checkout({
           items: cart.map((entry) => ({
             name: entry.name,
             quantity: entry.quantity,
-            unitPrice: entry.price,
+            unitPrice: priceForEntry(entry),
           })),
-          subtotal: cartTotal,
+          subtotal: cartTotalForPayment,
           deliveryFee: delivery,
-          total: orderTotal,
+          total: orderTotalForPayment,
           paymentMethod: payment,
           paymentNote: payment === "cash" && change.trim() ? change.trim() : undefined,
         });
@@ -401,7 +440,12 @@ export function Checkout({
       } else {
         window.open(url, "_blank");
       }
-      setSentSummary({ cart, cartTotal, delivery, orderTotal });
+      setSentSummary({
+        cart: cart.map((entry) => ({ ...entry, price: priceForEntry(entry) })),
+        cartTotal: cartTotalForPayment,
+        delivery,
+        orderTotal: orderTotalForPayment,
+      });
       clearCart();
       setSent(true);
       // Pedido enviado: se o cliente pedir de novo sem recarregar a página, o próximo
@@ -797,7 +841,7 @@ export function Checkout({
             />
 
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-              {PAYMENT_OPTIONS.map((opt) => {
+              {availablePaymentOptions.map((opt) => {
                 const selected = payment === opt.id;
                 return (
                   <button
@@ -875,6 +919,52 @@ export function Checkout({
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Após enviar o pedido pelo WhatsApp, o vendedor te manda o QR Code do PIX.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {payment === "card" && (
+              <div
+                className="mt-6 rounded-3xl p-5 flex gap-3"
+                style={{ backgroundColor: "color-mix(in oklch, var(--primary) 12%, var(--card))" }}
+              >
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: "var(--primary)" }}
+                >
+                  <CreditCard className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading font-bold text-sm mb-1">Pagamento no cartão</p>
+                  {isCardAdjusted ? (
+                    <>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Alguns itens têm preço ajustado para pagamento parcelado no cartão.
+                      </p>
+                      <div className="mt-3 flex flex-col gap-1.5">
+                        {cart.map((entry) => {
+                          const price = priceForEntry(entry);
+                          return (
+                            <div key={entry.id} className="flex items-center justify-between gap-2 text-xs">
+                              <span className="text-foreground font-medium truncate">
+                                {entry.quantity}× {entry.name}
+                              </span>
+                              <span className="text-muted-foreground shrink-0">
+                                {fmt(price * entry.quantity)}
+                                {entry.installments && entry.cardPrice != null
+                                  ? ` (${entry.installments}x de ${fmt(entry.cardPrice / entry.installments)})`
+                                  : ""}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Leve o cartão na entrega — o pagamento é feito com a maquininha do entregador.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -1010,10 +1100,12 @@ export function Checkout({
                 <p className="text-xs text-foreground font-semibold leading-snug">
                   {payment === "pix" && "PIX"}
                   {payment === "cash" && "Dinheiro"}
+                  {payment === "card" && "Cartão"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {payment === "pix" && "Aprovação imediata"}
                   {payment === "cash" && (change.trim() ? `Troco p/ ${change}` : "Na entrega")}
+                  {payment === "card" && (isCardAdjusted ? "Preço ajustado (parcelado)" : "Na entrega")}
                 </p>
               </div>
             </div>

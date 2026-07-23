@@ -12,6 +12,7 @@ const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
 
 const PAYMENT_LABELS: Record<string, string> = {
   pix: "PIX",
+  card: "Cartão",
   credit: "Cartão de crédito",
   cash: "Dinheiro na entrega",
 };
