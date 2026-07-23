@@ -175,7 +175,7 @@ export function ProductsAdmin({
         <div>
           <h1 className="font-heading text-3xl font-black tracking-tight">Produtos</h1>
           <p className="mt-1.5 text-muted-foreground">
-            Cadastre e gerencie os cookies exibidos no catálogo.
+            Cadastre e gerencie os produtos exibidos no catálogo.
           </p>
         </div>
         <button

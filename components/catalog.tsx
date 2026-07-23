@@ -425,7 +425,7 @@ export function Catalog({
             <span className="font-heading font-semibold text-foreground">
               {products.length}
             </span>{" "}
-            sabores
+            produtos
           </span>
           <span className="w-px h-4 bg-border hidden sm:block" />
           <span className="hidden sm:block">Entrega grátis acima de {fmt(freeDeliveryThreshold)}</span>
