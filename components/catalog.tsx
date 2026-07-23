@@ -60,9 +60,19 @@ function CookieCard({
         className="relative aspect-square flex items-center justify-center overflow-hidden"
         style={{ backgroundColor: cookie.visual.bg }}
       >
-        <span className="text-7xl select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[-8deg] drop-shadow-md">
-          {cookie.visual.emoji}
-        </span>
+        {cookie.imageUrl ? (
+          <Image
+            src={cookie.imageUrl}
+            alt={cookie.name}
+            fill
+            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+          />
+        ) : (
+          <span className="text-7xl select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[-8deg] drop-shadow-md">
+            {cookie.visual.emoji}
+          </span>
+        )}
 
         <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 

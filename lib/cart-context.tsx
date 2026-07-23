@@ -11,6 +11,7 @@ export type CookieItem = {
   price: number;
   category: string;
   visual: { bg: string; emoji: string };
+  imageUrl: string | null;
 };
 
 export type CartEntry = CookieItem & { quantity: number };
