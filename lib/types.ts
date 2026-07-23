@@ -22,6 +22,7 @@ export type StoreListItemDTO = {
   storeDescription: string;
   brandColor: string;
   isPublished: boolean;
+  logoUrl: string | null;
 };
 
 export type StoreSettingsDTO = {
@@ -43,6 +44,7 @@ export type StoreSettingsDTO = {
   brandColor: string;
   themeColor: string;
   brandIcon: string;
+  logoUrl: string | null;
   isPublished: boolean;
   manuallyClosedDate: string | null;
 };

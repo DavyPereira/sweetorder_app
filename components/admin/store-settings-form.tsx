@@ -24,6 +24,7 @@ const FIELD_TAB: Record<keyof SettingsFormData, "geral" | "contato" | "entrega">
   brandColor: "geral",
   themeColor: "geral",
   brandIcon: "geral",
+  logoUrl: "geral",
   isPublished: "geral",
   email: "geral",
   whatsappNumber: "contato",

@@ -21,6 +21,7 @@ function mapStoreRow(row: {
   brand_color: string;
   theme_color: string;
   brand_icon: string;
+  logo_url: string | null;
   is_published: boolean;
   manually_closed_date: string | null;
 }): StoreSettingsDTO {
@@ -43,6 +44,7 @@ function mapStoreRow(row: {
     brandColor: row.brand_color,
     themeColor: row.theme_color,
     brandIcon: row.brand_icon,
+    logoUrl: row.logo_url,
     isPublished: row.is_published,
     manuallyClosedDate: row.manually_closed_date,
   };
@@ -79,7 +81,7 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("stores")
-    .select("id, slug, store_name, store_description, brand_color, is_published")
+    .select("id, slug, store_name, store_description, brand_color, is_published, logo_url")
     .order("store_name", { ascending: true });
 
   if (error) throw error;
@@ -91,5 +93,6 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
     storeDescription: row.store_description,
     brandColor: row.brand_color,
     isPublished: row.is_published,
+    logoUrl: row.logo_url,
   }));
 }

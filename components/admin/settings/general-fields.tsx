@@ -1,23 +1,111 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
+import Image from "next/image";
+import { ImagePlus, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { FieldError, FieldLabel, inputClass } from "@/components/form-kit";
 import { STORE_ICONS, STORE_ICON_NAMES } from "@/lib/store-icons";
+import { uploadStoreLogo } from "@/app/admin/loja/actions";
 import type { SettingsFormData } from "@/components/admin/store-settings-form";
+
+function StoreLogoField({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string | null | undefined;
+  onChange: (url: string | null) => void;
+  disabled?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFile = async (file: File) => {
+    setError("");
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await uploadStoreLogo(formData);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      onChange(result.url ?? null);
+    } catch {
+      setError("Erro ao enviar imagem. Tente uma foto menor ou verifique sua conexão.");
+    } finally {
+      setIsUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <FieldLabel>Logo da loja</FieldLabel>
+      <div className="flex items-center gap-3">
+        {value ? (
+          <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 border-border bg-white">
+            <Image src={value} alt="" fill sizes="64px" className="object-contain p-1" />
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              disabled={disabled || isUploading}
+              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer"
+              aria-label="Remover logo"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center shrink-0 text-muted-foreground">
+            {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+          </div>
+        )}
+        <div>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={disabled || isUploading}
+            className="h-9 px-4 rounded-full text-sm font-medium bg-secondary hover:bg-border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isUploading ? "Enviando..." : value ? "Trocar logo" : "Escolher logo"}
+          </button>
+          <p className="mt-1 text-xs text-muted-foreground">JPG, PNG ou WEBP, até 5MB.</p>
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+        }}
+      />
+      {error && <p className="mt-1.5 text-xs font-medium text-destructive">{error}</p>}
+    </div>
+  );
+}
 
 export function GeneralFields({ isPending }: { isPending: boolean }) {
   const {
     register,
     watch,
     control,
+    setValue,
     formState: { errors },
   } = useFormContext<SettingsFormData>();
 
   const slug = watch("slug");
   const isPublished = watch("isPublished");
+  const logoUrl = watch("logoUrl");
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   return (
@@ -68,6 +156,15 @@ export function GeneralFields({ isPending }: { isPending: boolean }) {
           />
           <FieldError>{errors.email?.message}</FieldError>
         </div>
+      </div>
+
+      <div>
+        <StoreLogoField
+          value={logoUrl}
+          onChange={(url) => setValue("logoUrl", url, { shouldValidate: true })}
+          disabled={isPending}
+        />
+        <FieldError>{errors.logoUrl?.message}</FieldError>
       </div>
 
       <div>

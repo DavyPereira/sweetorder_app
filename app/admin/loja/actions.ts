@@ -6,9 +6,40 @@ import { requireAdmin } from "@/lib/session-helpers";
 import { storeSettingsSchema, type StoreSettingsFormData } from "@/lib/schemas/store-settings";
 import { businessHoursSchema, type BusinessHoursFormData } from "@/lib/schemas/business-hours";
 import { getTodayDateInStoreTimezone } from "@/lib/business-hours-status";
+import { uploadImageToR2, deleteImageFromR2 } from "@/lib/r2";
 
 export type SettingsInput = StoreSettingsFormData;
 export type SettingsActionState = { error?: string };
+
+const MAX_LOGO_SIZE = 5 * 1024 * 1024;
+const ALLOWED_LOGO_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+export type UploadLogoState = { url?: string; error?: string };
+
+export async function uploadStoreLogo(formData: FormData): Promise<UploadLogoState> {
+  const admin = await requireAdmin();
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Selecione uma imagem" };
+
+  const ext = ALLOWED_LOGO_TYPES[file.type];
+  if (!ext) return { error: "Formato inválido. Use JPG, PNG ou WEBP." };
+  if (file.size > MAX_LOGO_SIZE) return { error: "Imagem muito grande (máx. 5MB)" };
+
+  const key = `logos/${admin.storeId}/${crypto.randomUUID()}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  try {
+    const url = await uploadImageToR2(key, buffer, file.type);
+    return { url };
+  } catch {
+    return { error: "Erro ao enviar imagem" };
+  }
+}
 
 export async function updateStoreSettings(data: SettingsInput): Promise<SettingsActionState> {
   const admin = await requireAdmin();
@@ -16,6 +47,14 @@ export async function updateStoreSettings(data: SettingsInput): Promise<Settings
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("stores")
+    .select("logo_url")
+    .eq("id", admin.storeId)
+    .maybeSingle();
+
+  const newLogoUrl = parsed.data.logoUrl ?? null;
+
   const { error } = await supabase
     .from("stores")
     .update({
@@ -35,10 +74,15 @@ export async function updateStoreSettings(data: SettingsInput): Promise<Settings
       brand_color: parsed.data.brandColor,
       theme_color: parsed.data.themeColor,
       brand_icon: parsed.data.brandIcon,
+      logo_url: newLogoUrl,
       is_published: parsed.data.isPublished,
     })
     .eq("id", admin.storeId);
   if (error) return { error: "Erro ao salvar configurações" };
+
+  if (existing?.logo_url && existing.logo_url !== newLogoUrl) {
+    await deleteImageFromR2(existing.logo_url).catch(() => {});
+  }
 
   revalidatePath("/admin/loja");
   revalidatePath("/");

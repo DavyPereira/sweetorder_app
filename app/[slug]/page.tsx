@@ -24,6 +24,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
       brandIcon={settings.brandIcon}
       manuallyClosedDate={settings.manuallyClosedDate}
       acceptsInstallments={settings.acceptsInstallments}
+      logoUrl={settings.logoUrl}
     />
   );
 }

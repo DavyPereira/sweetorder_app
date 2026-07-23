@@ -209,6 +209,7 @@ export function Catalog({
   brandIcon,
   manuallyClosedDate,
   acceptsInstallments,
+  logoUrl,
 }: {
   slug: string;
   products: CookieItem[];
@@ -218,6 +219,7 @@ export function Catalog({
   brandIcon?: string;
   manuallyClosedDate: string | null;
   acceptsInstallments: boolean;
+  logoUrl: string | null;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
@@ -387,10 +389,10 @@ export function Catalog({
             </p>
           </div>
 
-          {!logoFailed && (
+          {logoUrl && !logoFailed && (
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl overflow-hidden bg-white shadow-sm animate-slide-up" style={{ animationDelay: "0.05s" }}>
               <Image
-                src={`/logos/${slug}.png`}
+                src={logoUrl}
                 alt={storeName}
                 fill
                 sizes="96px"

@@ -12,6 +12,7 @@ function StoreCard({ store, index }: { store: StoreListItemDTO; index: number })
   const initial = store.storeName.trim().charAt(0).toUpperCase() || "?";
   const [logoFailed, setLogoFailed] = useState(false);
   const isPublished = store.isPublished;
+  const showLogo = !!store.logoUrl && !logoFailed;
 
   const cardContent = (
     <>
@@ -19,24 +20,24 @@ function StoreCard({ store, index }: { store: StoreListItemDTO; index: number })
 
       <div
         className="relative aspect-[16/9] flex items-center justify-center overflow-hidden"
-        style={{ backgroundColor: logoFailed ? `color-mix(in oklch, ${color} 14%, var(--card))` : "#ffffff" }}
+        style={{ backgroundColor: showLogo ? "#ffffff" : `color-mix(in oklch, ${color} 14%, var(--card))` }}
       >
-        {logoFailed ? (
-          <span
-            className="font-heading text-4xl font-bold select-none"
-            style={{ letterSpacing: "-0.02em", color }}
-          >
-            {initial}
-          </span>
-        ) : (
+        {showLogo ? (
           <Image
-            src={`/logos/${store.slug}.png`}
+            src={store.logoUrl!}
             alt={store.storeName}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-contain p-6"
             onError={() => setLogoFailed(true)}
           />
+        ) : (
+          <span
+            className="font-heading text-4xl font-bold select-none"
+            style={{ letterSpacing: "-0.02em", color }}
+          >
+            {initial}
+          </span>
         )}
         {!isPublished && (
           <span className="absolute top-2.5 right-2.5 rounded-full bg-foreground/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-background backdrop-blur-sm">

@@ -48,6 +48,7 @@ export const storeSettingsSchema = z.object({
   brandIcon: z.enum(STORE_ICON_NAMES as [string, ...string[]], {
     error: "Escolha um ícone válido",
   }),
+  logoUrl: z.string().trim().url().nullable().optional(),
   isPublished: z.boolean(),
 });
 
