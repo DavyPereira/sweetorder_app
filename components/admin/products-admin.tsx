@@ -591,14 +591,15 @@ function ProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[85dvh] p-0 gap-0 flex flex-col">
+        <DialogHeader className="p-4 pb-0 shrink-0">
           <DialogTitle className="font-heading text-2xl font-black">
             {isEditing ? "Editar produto" : "Novo produto"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={onSubmit} noValidate className="mt-2">
+        <form onSubmit={onSubmit} noValidate className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-4">
           <div>
             <FieldLabel>Nome</FieldLabel>
             <Input
@@ -663,9 +664,7 @@ function ProductDialog({
             />
             <FieldError>{errors.stockQuantity?.message}</FieldError>
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Quantidade disponível para vender hoje. Deixe em branco se não quiser controlar
-              estoque desse produto. Quando chegar a 0, ele aparece como &quot;Esgotado&quot;
-              para os clientes. O número não reseta sozinho — atualize manualmente todos os dias.
+              Em branco = ilimitado. Ao chegar a 0 vira &quot;Esgotado&quot;. Não reseta sozinho.
             </p>
           </div>
 
@@ -754,12 +753,13 @@ function ProductDialog({
           {serverError && (
             <p className="text-center text-sm font-medium text-destructive mt-4">{serverError}</p>
           )}
+        </div>
 
-          <div className="mt-6">
-            <ActionButton type="submit" color="var(--primary)" disabled={isPending}>
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : isEditing ? "Salvar alterações" : "Criar produto"}
-            </ActionButton>
-          </div>
+        <div className="shrink-0 p-4 border-t border-border">
+          <ActionButton type="submit" color="var(--primary)" disabled={isPending}>
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : isEditing ? "Salvar alterações" : "Criar produto"}
+          </ActionButton>
+        </div>
         </form>
       </DialogContent>
     </Dialog>
