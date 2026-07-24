@@ -264,15 +264,20 @@ export function Checkout({
   }, [availablePaymentOptions]);
 
   const isCardAdjusted = payment === "card" && acceptsInstallments;
-  const installmentPct = isCardAdjusted ? INSTALLMENT_INTEREST_PCT[installments] ?? 0 : 0;
+  // Até FREE_INSTALLMENTS (3x) o cliente paga o preço normal, sem nenhum acréscimo — o
+  // "preço no cartão" (com os juros escalonados) só entra em jogo a partir de 4x.
+  const usesCardPricing = isCardAdjusted && installments > FREE_INSTALLMENTS;
+  const installmentPct = usesCardPricing ? INSTALLMENT_INTEREST_PCT[installments] ?? 0 : 0;
   const installmentMultiplier = 1 + installmentPct / 100;
   const priceForEntry = (entry: CartEntry) =>
-    isCardAdjusted ? (entry.cardPrice ?? entry.price) * installmentMultiplier : entry.price;
+    usesCardPricing ? (entry.cardPrice ?? entry.price) * installmentMultiplier : entry.price;
   const cartTotalForPayment = cart.reduce((s, e) => s + priceForEntry(e) * e.quantity, 0);
   const orderTotalForPayment = cartTotalForPayment + delivery;
 
+  const basePriceCartTotal = cart.reduce((s, e) => s + e.price * e.quantity, 0);
   const baseCardCartTotal = cart.reduce((s, e) => s + (e.cardPrice ?? e.price) * e.quantity, 0);
   const totalForInstallments = (n: number) => {
+    if (n <= FREE_INSTALLMENTS) return basePriceCartTotal + delivery;
     const pct = INSTALLMENT_INTEREST_PCT[n] ?? 0;
     return baseCardCartTotal * (1 + pct / 100) + delivery;
   };

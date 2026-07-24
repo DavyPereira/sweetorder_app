@@ -684,8 +684,8 @@ function ProductDialog({
               />
               <FieldError>{errors.cardPrice?.message}</FieldError>
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Valor base no cartão à vista. No checkout, o cliente escolhe em quantas vezes
-                parcelar (até 3x sem juros, acima disso com juros aplicados automaticamente).
+                Usado só a partir de 4x parcelado, com juros aplicados automaticamente. Em até
+                3x, o cliente paga o preço normal do produto, sem nenhum acréscimo.
               </p>
             </div>
           )}
